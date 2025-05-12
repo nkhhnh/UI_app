@@ -1,0 +1,488 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    background-color: #e5d1ad;
+    user-select: none; 
+    -webkit-user-select: none;
+}
+h1{
+    position: fixed;
+    top: 40px;
+    right: 36%;
+    font-size: 40px;
+    
+}
+.music-container,
+.weather-container,
+.contact-container {
+    position: relative;
+}
+
+.img-weather,
+.img-music,
+.img-contact {
+    position: fixed;
+    width: 300px;
+    height: 500px;
+    border-radius: 20px;
+    transition: filter 0.2s ease-in-out;
+    z-index: 1;
+    overflow: hidden;
+    filter: grayscale(100%);
+}
+
+.img-weather {
+    top: 20%;
+    right: 8%;
+    background: #d4ad42;
+}
+
+.img-music {
+    top: 20%;
+    left: 20%;
+    background: #577c52;
+}
+
+.img-contact {
+    top: 20%;
+    left: 46%;
+    background: none;
+}
+a.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.object {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    filter: grayscale(100%);
+    transform: translateY(60px);
+    transition: all 0.3s ease-in-out;
+    z-index: 2;
+}
+
+.object-contact {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-image: url(/image/contact.png);
+    
+   
+}
+
+.img-weather .object {
+    background-image: url(/image/weather.png);
+}
+
+.img-music .object {
+    background-image: url(/image/music.png);
+}
+
+.text {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgb(255, 255, 255);
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    text-align: center;
+    font-weight: bolder;
+    z-index: 3;
+}
+
+.img-weather .text,
+.img-music .text,
+.img-contact .text {
+    font-size: 20px;
+}
+
+.img-weather:hover,
+.img-music:hover,
+.img-contact:hover {
+    filter: grayscale(0%);
+}
+
+.img-weather:hover .object,
+.img-music:hover .object {
+    filter: grayscale(0%);
+    transform: translateY(49.5px);
+}
+
+.img-weather:hover .text,
+.img-music:hover .text,
+.img-contact:hover .text {
+    opacity: 1;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.edge-text {
+    font-size: 30px;
+    font-weight: bold;
+    color: #BF4547;
+    opacity: 0; /* Ẩn mặc định trên desktop */
+    transition: opacity 0.3s ease-in-out; /* Hiệu ứng mượt */
+}
+
+/* Hover cho music-container */
+.music-container:hover .img-music,
+.music-container:hover .img-music .object {
+    filter: grayscale(0%);
+}
+
+.music-container:hover .img-music .object {
+    transform: translateY(49.5px);
+}
+
+.music-container:hover .img-music .text {
+    opacity: 1;
+}
+
+.music-container:hover .edge-text {
+    opacity: 1;
+}
+
+/* Hover cho weather-container */
+.weather-container:hover .img-weather,
+.weather-container:hover .img-weather .object {
+    filter: grayscale(0%);
+}
+
+.weather-container:hover .img-weather .object {
+    transform: translateY(49.5px);
+}
+
+.weather-container:hover .img-weather .text {
+    opacity: 1;
+}
+
+.weather-container:hover .edge-text {
+    opacity: 1;
+}
+
+/* Hover cho contact-container */
+.contact-container:hover .img-contact {
+    filter: grayscale(0%);
+}
+
+.contact-container:hover .img-contact .text {
+    opacity: 1;
+}
+
+/* Trạng thái hovered cho music-container */
+.music-container.hovered .img-music,
+.music-container.hovered .img-music .object {
+    filter: grayscale(0%);
+}
+
+.music-container.hovered .img-music .object {
+    transform: translateY(49.5px);
+}
+
+.music-container.hovered .img-music .text {
+    opacity: 1;
+}
+
+.music-container.hovered .edge-text {
+    opacity: 1;
+}
+
+/* Trạng thái hovered cho weather-container */
+.weather-container.hovered .img-weather,
+.weather-container.hovered .img-weather .object {
+    filter: grayscale(0%);
+}
+
+.weather-container.hovered .img-weather .object {
+    transform: translateY(49.5px);
+}
+
+.weather-container.hovered .img-weather .text {
+    opacity: 1;
+}
+
+.weather-container.hovered .edge-text {
+    opacity: 1;
+}
+
+.contact-container.hovered .img-contact {
+    filter: grayscale(0%);
+}
+
+.contact-container.hovered .img-contact {
+    opacity: 1;
+}
+.contact-container.hovered .edge-text {
+    opacity: 1;
+}
+
+.top-w {
+    position: fixed;
+    top: 90px;
+    right: 200px;
+}
+
+.top-m {
+    position: fixed;
+    top: 90px;
+    left: 390px;
+}
+.top-c {
+    position: fixed;
+    top: 600px;
+    right: 630px;
+    
+}
+
+.bottom-w {
+    position: fixed;
+    bottom: 20px;
+    right: 200px;
+}
+
+.bottom-m {
+    position: fixed;
+    bottom: 20px;
+    left: 390px;
+}
+
+.left-m {
+    position: fixed;
+    top: 200px;
+    left: 260px;
+    writing-mode: vertical-lr;
+    text-orientation: upright;
+}
+
+.left-w {
+    position: fixed;
+    top: 200px;
+    right: 80px;
+    writing-mode: vertical-lr;
+    text-orientation: upright;
+}
+
+.right-m {
+    position: fixed;
+    top: 200px;
+    left: 610px;
+    writing-mode: vertical-lr;
+    text-orientation: upright;
+}
+
+.right-w {
+    position: fixed;
+    top: 200px;
+    right: 425px;
+    writing-mode: vertical-lr;
+    text-orientation: upright;
+}
+
+/* Media query cho mobile (dưới 870px) */
+@media (max-width: 870px) {
+    .img-weather,
+    .img-music ,.img-contact{
+        position: fixed;
+        width: 300px;
+        height: 300px;
+        border-radius: 20px;
+        z-index: 1;
+        overflow: hidden;
+        filter: grayscale(0%);
+    }
+
+    .img-weather {
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #c6a754;
+    }
+
+    .img-music {
+        top: 10%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #577c52;
+    }
+
+    .img-contact {
+        top: 80%;
+        left: 50%;
+        transform: translateX(-50%);
+        
+    }
+
+    h1{
+        position: fixed;
+        top: 47px;
+        right: 35%;
+        font-size: 20px;
+        
+    }
+    .object {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: contain;
+        background-repeat: no-repeat;
+        filter: grayscale(0%);
+        transform: translateY(60px);
+        transition: none;
+        z-index: 2;
+    }
+    
+    .img-weather .object {
+        background-image: url(/image/weather2.png);
+    }
+
+    .img-music .object {
+        background-image: url(/image/music2.png);
+    }
+    .img-contact .object-contact {
+        background-image: url(/image/contact2.png);
+    }
+
+    .text {
+        display: none;
+    }
+
+    .img-weather .text,
+    .img-music .text {
+        font-size: 12px;
+    }
+
+    .edge-text {
+        opacity: 1; /* Luôn hiển thị */
+        font-size: 30px; /* Giảm kích thước cho phù hợp */
+    }
+
+    .top-w {
+        top: 46%;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        writing-mode: horizontal-tb;
+    }
+
+    .top-m {
+        top: 16%;
+        left: 50%;
+        transform: translateX(-50%);
+        writing-mode: horizontal-tb;
+    }
+
+    .top-c {
+        bottom: 30%;
+        left: 50%;
+        transform: translateX(-50%);
+        writing-mode: horizontal-tb;
+    }
+    .bottom-w,
+    .bottom-m,
+    .left-w,
+    .left-m,
+    .right-w,
+    .right-m {
+        display: none; /* Ẩn văn bản dọc để tránh rối */
+    }
+}
+
+/* Media query cho mobile nhỏ hơn (dưới 570px) */
+@media (max-width: 570px) {
+    .img-weather,
+    .img-music ,.img-contact{
+        width: 200px;
+        height: 170px;
+        border-radius: 15px;
+        filter: grayscale(0%);
+    }
+
+    .img-weather {
+        top: 45%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #c6a754;
+    }
+
+    .img-music {
+        top: 15%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #577c52;
+    }
+    .img-contact {
+        top: 75%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: none;
+    }
+
+    .object {
+        filter: grayscale(0%);
+        transform: translateY(40px);
+    }
+
+    .text {
+        display: none;
+    }
+
+    .edge-text {
+        opacity: 1; /* Luôn hiển thị */
+        font-size: 14px; /* Giảm thêm kích thước */
+        white-space: nowrap;
+    }
+
+    .top-w {
+        top: 42%;
+        left: 50%;
+        transform: translateX(-50%);
+        writing-mode: horizontal-tb;
+    }
+
+    .top-c {
+        top: 72%;
+        left: 40% ;
+        transform: translateX(-50%);
+        writing-mode: horizontal-tb;
+    }
+    .top-m {
+        top: 12%;
+        left: 50%;
+        transform: translateX(-50%);
+        writing-mode: horizontal-tb;
+    }
+
+    .bottom-w,
+    .bottom-m,
+    .left-w,
+    .left-m,
+    .right-w,
+    .right-m {
+        display: none;
+    }
+}

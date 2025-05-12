@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <link rel="stylesheet" href="/css/user.css">
+
+    <link rel="stylesheet" href="/css/nav.css">
+    <link rel="stylesheet" href="/css/pagetrans.css" />
+
+    <link rel="stylesheet" href="/asset/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/asset/boxicons/css/boxicons.min.css">
+    
+    <link rel="icon" href="/image/logo.png" type="image/x-icon">
+    <title>User Profile</title>
+</head>
+<body>
+ 
+    <!-- Thông báo trạng thái mạng -->
+    <div class="network-status" style="display: none; position: fixed; top: 10px; right: 10px; background: #ff4444; color: #fff; padding: 5px 10px; border-radius: 4px; z-index: 1000;">
+        You are offline. Some features are unavailable.
+    </div>
+
+    <div id="sidebar-placeholder">
+        <section class="sidebar fallback" style="display: none;">
+            <div class="nav-header">
+                <p class="logo">MUSIC</p>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="user.html">User</a></li>
+                <li><a href="weather.html">Weather</a></li>
+                <li><a href="musicplayer.html">Music</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="login.html" id="fallback-auth-link">Login</a></li>
+            </ul>
+        </section>
+    </div>
+    <div class="page-content">
+    <!-- Main content -->
+    <div class="main-content">
+        <div class="profile-container">
+            <!-- Phần đầu cố định -->
+            <div class="profile-header">
+                <h2>Thông Tin</h2>
+                <!-- Tabs -->
+                <div class="profile-tabs">
+                    <button class="tab-button active" data-tab="user-info">Thông tin của bạn</button>
+                    <button class="tab-button" data-tab="update-profile">Thay đổi thông tin</button>
+                    <button class="tab-button" data-tab="change-password">Đổi mật khẩu</button>
+                </div>
+            </div>
+
+            <!-- Tab content: User Info -->
+            <div id="user-info" class="tab-content active">
+                <div class="user-info-card">
+                    <div class="info-item">
+                        <span class="info-label">Tên :</span>
+                        <span class="info-value" id="user-name">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value" id="gmail">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Tài khoản:</span>
+                        <span class="info-value" id="account-status">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Số lượng bài hát:</span>
+                        <span class="info-value" id="song-count">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Số lượng Album:</span>
+                        <span class="info-value" id="album-count">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab content: Update Profile -->
+            <div id="update-profile" class="tab-content">
+                <form id="update-profile-form">
+                    <div class="form-group">
+                        <label for="user_name">Tên:</label>
+                        <input type="text" id="user_name" name="user_name">
+                    </div>
+                    <div class="form-group">
+                        <label for="gmail">Email:</label>
+                        <input type="email" id="gmail" name="gmail">
+                    </div>
+                    <button class="btn-submit" type="submit">Xác nhận</button>
+                </form>
+            </div>
+
+            <!-- Tab content: Change Password -->
+            <div id="change-password" class="tab-content">
+                <form id="change-password-form">
+                    <div class="form-group">
+                        <label for="current_password">Mật khẩu hiện tại:</label>
+                        <input type="password" id="current_password" name="current_password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password">Mật khẩu mới:</label>
+                        <input type="password" id="new_password" name="new_password" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password_confirmation">Xác nhận mật khẩu:</label>
+                        <input type="password" id="new_password_confirmation" name="new_password_confirmation" required>
+                    </div>
+                    <button class="btn-submit" type="submit">Xác nhận</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- Script -->
+ 
+    <script src="/js/user.js"></script>
+    <script src="/js/nav.js"></script>
+    <script src="/js/logout.js"></script>
+    
+    <script src="/js/pagetrans.js"></script>
+</body>
+</html>

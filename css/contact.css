@@ -1,0 +1,85 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+   
+    background-color: #e5d1ad;
+    user-select: none; /* Ngăn bôi đen hoặc chọn ảnh */
+    -webkit-user-select: none;
+}
+h1{
+    position: fixed;
+    top: 30px;
+    right: 40%;
+    font-size: 50px;
+    
+}
+.text-content{
+    position: fixed;
+    top: 100px;
+    margin-left: 200px;
+    margin-right: 80px;
+    font-size: 23px;
+}
+.button-link{
+    position: fixed;
+    top: 530px;
+    background: none;
+    font-size: 30px;
+    border: none;
+    cursor: pointer;
+}
+/* Media query cho mobile (dưới 870px) */
+@media (max-width: 870px) {
+    h1 {
+        position: static; /* Bỏ fixed để căn giữa tự nhiên */
+        font-size: 36px;
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .text-content {
+        position: static;
+        margin: 70px 20px; /* Padding hai bên */
+        font-size: 16px;
+        max-width: none; /* Bỏ giới hạn chiều rộng */
+        text-align: justify;
+    }
+
+    .text-content p {
+        
+        margin-bottom: 12px;
+    }
+
+    .button-link {
+        position: static;
+        display: block;
+        margin: 20px auto; /* Căn giữa */
+        font-size: 24px;
+        text-align: center;
+    }
+}
+
+/* Media query cho mobile nhỏ hơn (dưới 570px) */
+@media (max-width: 570px) {
+    h1 {
+        font-size: 28px;
+        margin: 15px 0;
+    }
+
+    .text-content {
+        margin: 100px   15px;
+        font-size: 14px;
+    }
+
+    .text-content p {
+        margin-bottom: 10px;
+    }
+
+    .button-link {
+        font-size: 20px;
+        margin: 15px auto;
+    }
+}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no,viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="/image/192x192.png">
+    
+    <link rel="stylesheet" href="/css/pagetrans.css" />
+    <link rel="stylesheet" href="/css/nav.css" />
+
+
+    <link rel="stylesheet" href="/asset/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/asset/boxicons/css/boxicons.min.css">
+
+    
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="icon" href="/image/logo.png" type="image/x-icon">
+    <title>Home</title>
+</head>
+<body>
+    <div id="sidebar-placeholder">
+        <section class="sidebar fallback" style="display: none;">
+            <div class="nav-header">
+                <p class="logo">MUSIC</p>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="user.html">User</a></li>
+                <li><a href="weather.html">Weather</a></li>
+                <li><a href="musicplayer.html">Music</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="login.html" id="fallback-auth-link">Login</a></li>
+            </ul>
+        </section>
+    </div>
+    <div class="page-content">
+        <h1>TRANG CHỦ</h1>
+        <div class="content-wrapper">
+            <div class="image">
+                <!-- Nhóm img-music và edge-text -->
+                <div class="music-container">
+                    <a href="musicplayer.html">
+                        <div class="img-music">
+                            <div class="background-overlay"></div>
+                            <div class="object"></div>
+                            <div class="text">Nghe Nhạc Nào!!!</div>
+                        </div>
+                    </a>
+                    <div class="edge-text top-m">ÂM NHẠC</div>
+                    <div class="edge-text bottom-m">CẢM XÚC</div>
+                    <div class="edge-text left-m">GIẢI TRÍ</div>
+                    <div class="edge-text right-m">GIAI ĐIỆU</div>
+                </div>
+
+                <!-- Nhóm img-contact -->
+                <div class="contact-container">
+                    <a href="contact.html">
+                        <div class="img-contact">
+                            <div class="background-overlay"></div>
+                            <div class="object-contact"></div>
+                            <div class="text"></div>
+                        </div>
+                    </a>
+                    <div class="edge-text top-c">LIÊN HỆ</div>
+                </div>
+
+                <!-- Nhóm img-weather và edge-text -->
+                <div class="weather-container">
+                    <a href="weather.html">
+                        <div class="img-weather">
+                            <div class="object"></div>
+                            <div class="text">Cẩn Thận Trời Mưa Nhé!!!</div>
+                        </div>
+                    </a>
+                    <div class="edge-text top-w">THỜI TIẾT</div>
+                    <div class="edge-text bottom-w">DỰ BÁO</div>
+                    <div class="edge-text left-w">GIÓ MÂY</div>
+                    <div class="edge-text right-w">NẮNG MƯA</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/nav.js"></script>
+    <script src="/js/logout.js"></script>
+    <script src="/js/pagetrans.js"></script>
+    <script src="/js/index.js"></script>
+    <script src="/js/service-worker-register.js"></script>
+</body>
+</html>

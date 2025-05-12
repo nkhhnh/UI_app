@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <link rel="stylesheet" href="/css/pagetrans.css" />
+    <link rel="stylesheet" href="/css/nav.css" />
+    <link rel="stylesheet" href="/asset/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/asset/boxicons/css/boxicons.min.css">
+    <link rel="stylesheet" href="/css/weather.css">
+    <link rel="icon" href="/image/weather.png" type="image/x-icon">
+    <title>Weather</title>
+</head>
+<body class="">
+    <div id="sidebar-placeholder">
+        <section class="sidebar fallback" style="display: none;">
+            <div class="nav-header">
+                <p class="logo">MUSIC</p>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="user.html">User</a></li>
+                <li><a href="weather.html">Weather</a></li>
+                <li><a href="musicplayer.html">Music</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="login.html" id="fallback-auth-link">Login</a></li>
+            </ul>
+        </section>
+    </div>
+    <div class="page-content">
+        <div id="weather">
+            <input type="text" class="search" placeholder="">
+            <div class="content hide">
+                <h1 class="location">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span class="city">TP.HCM</span>
+                    <span>,</span>
+                    <span class="country">VN</span>
+                </h1>
+                <div class="time">12/23/2000, 3:33:33 PM</div>
+                <img class="icon-weather" src="https://openweathermap.org/img/wn/10d@2x.png" alt="">
+                <div class="temperature">
+                    <span class="value"> <sup>o</sup>C</span>
+                </div>
+                <div class="short-desc">Clouds</div>
+                <div class="more-desc">
+                    <div class="forecast-day" data-day="1">
+                        <div class="desc">Đang tải...</div>
+                        <img src="" alt="">
+                        <div class="pop">-</div>
+                    </div>
+                    <div class="forecast-day" data-day="2">
+                        <div class="desc">Đang tải...</div>
+                        <img src="" alt="" >
+                        <div class="pop">-</div>
+                    </div>
+                    <div class="forecast-day" data-day="3">
+                        <div class="desc">Đang tải...</div>
+                        <img src="" alt="">
+                        <div class="pop">-</div>
+                    </div>
+                    <div class="forecast-day" data-day="4">
+                        <div class="desc">Đang tải...</div>
+                        <img src="" alt="" >
+                        <div class="pop">-</div>
+                    </div>
+                    <div class="forecast-day" data-day="5">
+                        <div class="desc">Đang tải...</div>
+                        <img src="" alt="" >
+                        <div class="pop">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/js/nav.js"></script>
+    <script src="/js/weather.js"></script>
+    <script src="/js/pagetrans.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+/* Reset cơ bản */
+* {
+    margin: 0;
+    padding: 0;
+  
+}
+
+/* Hiệu ứng fade cho container */
+.page-content {
+    opacity: 0; /* Bắt đầu với opacity 0 */
+    transition: opacity 2.5s ease; /* Hiệu ứng fade */
+}
+
+.page-content.loaded {
+    opacity: 1; /* Fade-in khi trang tải xong */
+}
+
+.page-content.fading {
+    opacity: 0; /* Fade-out khi rời trang */
+}

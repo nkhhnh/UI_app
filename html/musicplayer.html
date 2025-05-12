@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no,viewport-fit=cover">
+    
+    
+    <link rel="stylesheet" href="/css/nav.css">
+    <link rel="stylesheet" href="/css/pagetrans.css" />
+
+    <link rel="stylesheet" href="/css/music.css" />
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="yes">
+    <link rel="apple-touch-icon" href="/image/192x192.png">
+
+    
+    <link rel="stylesheet" href="/asset/uicons-regular-rounded.css">
+    <link rel="stylesheet" href="/asset/uicons-solid-straight.css">
+
+
+
+    <link rel="stylesheet" href="/asset/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/asset/boxicons/css/boxicons.min.css">
+
+
+    <link rel="icon" href="/image/music.png" type="image/x-icon">
+    <title>Music</title>
+</head>
+
+<body>
+    <div id="sidebar-placeholder">
+        <section class="sidebar fallback" style="display: none;">
+            <div class="nav-header">
+                <p class="logo">MUSIC</p>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="user.html">User</a></li>
+                <li><a href="weather.html">Weather</a></li>
+                <li><a href="musicplayer.html">Music</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="login.html" id="fallback-auth-link">Login</a></li>
+            </ul>
+        </section>
+    </div>
+    <div class="page-content">
+    <nav>
+        <div class="nav-content">
+          <div class="toggle-btn">
+            <i class="fa-solid fa-icons"style="color: #e30d23;"></i>
+          </div>
+          <span style="--i: 1">
+            <button class="button-link" onclick="window.open('https://y2mate.nu/en-kKuO/', '_blank')" title="Youtube Convert to mp3">
+                <i class="fa-brands fa-youtube" style="color: #e30d23;"></i>
+            </button>
+          </span>
+          <span style="--i: 2">
+            <button class="toggle-add-song-btn"><i class="fa-solid fa-file-audio"style="color: #e30d23;"></i></button>
+          </span>
+          <span style="--i: 3">
+            <button class="albums-toggle"><i class="fi fi-ss-folder-music" style="color: #e30d23;"></i></button>
+          </span>
+          <span style="--i: 4">
+            <button class="playlist-toggle"><i class="fi fi-ss-list-music" style="color: #e30d23;"></i></button>
+        </span>
+        </div>
+      </nav>
+    <!-- Overlay nền mờ -->
+    <div class="overlay"></div>
+
+    <!-- Popup "Thêm bài hát" ở giữa màn hình -->
+    <div class="add-song-popup">
+        <div class="add-song-header">
+            <h3>THÊM BÀI HÁT MỚI</h3>
+            <button class="close-add-song-btn">✖</button>
+        </div>
+        <div class="add-song-form">
+            <input type="text" class="add-song-title" placeholder="Tên bài hát">
+            <input type="text" class="add-song-artist" placeholder="Nghệ sĩ">
+            <input type="file" class="add-song-file" accept="audio/mp3" placeholder="Chọn file mp3">
+            <button class="add-song-submit">Thêm</button>
+        </div>
+    </div>
+
+
+    <!-- Playlist -->
+    <div class="playlist">
+        <h2 class="playlist-header">Playlist</h2>
+        <!-- Template cho song-item -->
+        <template id="song-item-template">
+            <div class="song-item" data-index="">
+                <div class="song-info">
+                    <p class="title"></p>
+                    <p class="artist"></p>
+                </div>
+                <button class="song-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                <div class="options-popup">
+                    <div class="option-item" data-action="delete"></div>
+                    <div class="option-item" data-action="download">Download</div>
+                    <div class="option-item" data-action="add-to-album">Add to Album</div>
+                </div>
+            </div>
+        </template>
+        <div class="song-list">
+            <p class="no-songs-message" style="display: none;">No songs available.</p>
+        </div>
+    </div>
+
+    <!-- Albums -->
+    <template id="album-item-template">
+        <div class="album-item" data-album-id="">
+            <div class="album-header">
+                <div class="album-title"></div>
+                <div class="album-actions">
+                    <button class="album-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                    <div class="options-popup">
+                        <div class="option-item" data-action="edit">Edit</div>
+                        <div class="option-item" data-action="delete">Delete</div>
+                        <div class="option-item" data-action="download">Download</div>
+                    </div>
+                </div>
+            </div>
+            <div class="album-songs">
+                <p class="no-album-songs-message" style="display: none;">No songs in this album.</p>
+            </div>
+        </div>
+    </template>
+    <template id="album-song-item-template">
+        <div class="album-song-item">
+            <div class="song-info">
+                <p class="song-title"></p>
+                <p class="song-artist"></p>
+            </div>
+            <button class="remove-song-btn" data-song="" data-album="">Remove</button>
+        </div>
+    </template>
+    <div class="albums-list">
+        <div class="albums-header">
+            <h2 class="albums-title">Albums</h2>
+            <button class="create-album-btn">Create Album</button>
+        </div>
+        <div class="album-list">
+            <p class="no-albums-message" style="display: none;">No albums available.</p>
+        </div>
+    </div>
+
+    <!-- Player -->
+    <div class="player">
+        <div class="record">
+            <div class="label"></i></div>
+        </div>
+        <div class="tone-arm">
+            <div class="control"></div>
+        </div>
+        <button class="btn"><i class="fa-solid fa-music"></i></button>
+        <div class="slider-container">
+            <input type="range" class="slider" min="0" max="1" step="0.1" value="0.7">
+            <audio id="audio" class="mp3" src="/audio/Like you do.mp3" playsinline></audio>
+        </div>
+    </div>
+
+    <!-- Music Control -->
+    <div class="main-music-control">
+        <div class="music-control__left">
+            <div class="music-control__left-img"></div>
+            <div class="music-control__left-content">
+                <span class="music-control__left-content-song">Hello</span>
+                <span class="music-control__left-content-singer">hello</span>
+            </div>
+        </div>
+        <div class="music-control__center">
+            <div class="music-control__center-action">
+                <i class="fas fa-random music-control__icon"></i>
+                <i class="fa-solid fa-backward music-control__icon"></i>
+                <div class="music-control__icon-play">
+                    <i class="fas fa-play"></i>
+                    <i class="fas fa-pause" style="display: none;"></i>
+                </div>
+                <i class="fa-solid fa-forward music-control__icon"></i>
+                <i class="fas fa-redo music-control__icon"></i>
+            </div>
+            <div class="music-control__progress">
+                <span class="music-control__progress-time-start">00:00</span>
+                <input id="progress" type="range" value="0" min="0" max="100" />
+                <span class="music-control__progress-time-duration">00:00</span>
+            </div>
+        </div>
+        <div class="music-control__right">
+            <i class="fa-solid fa-volume-high" style="color: #99a09e;" ></i>
+            <input id="progress1" type="range" value="100" min="0" max="100" />
+        </div>
+    </div>
+</div>
+    <script src="/js/nav.js"></script>
+        <script src="/js/music-app.js"></script>
+        <script src="/js/logout.js"></script>
+        <script src="/js/pagetrans.js"></script>
+    <script src="/js/service-worker-register.js"></script>
+</body>
+</html>

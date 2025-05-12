@@ -1,0 +1,387 @@
+/* Reset cơ bản */
+* {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Style cho body */
+body {
+    touch-action: none;
+    background-color: #e5d1ad;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
+    user-select: none; /* Ngăn bôi đen hoặc chọn ảnh */
+    -webkit-user-select: none;
+}
+
+
+/* Style cho main content */
+.main-content {
+    margin-left: 30px; /* Khoảng trống cho sidebar trên desktop */
+    padding: 2rem;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* Style cho profile container */
+.profile-container {
+    max-width: 500px;
+    width: 90%;
+    margin: 3rem auto;
+    padding: 1.5rem;
+    background-color: #f9f9f9;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Style cho profile header */
+.profile-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.profile-container h2 {
+    margin-bottom: 1rem;
+    color: #333;
+    font-size: 1.8rem;
+}
+
+/* Style cho tabs */
+.profile-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    background-color: #ddd;
+    color: #333;
+    cursor: pointer;
+    font-size: 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.btn-submit {
+    background-color: #BF4547;
+    color: #fff;
+}
+
+.btn-submit:hover {
+    background-color: #741C10;
+    color: #fff;
+}
+
+.tab-button.active {
+    background-color: #BF4547;
+    color: #fff;
+}
+
+.tab-button:hover {
+    background-color: #741C10;
+    color: #fff;
+}
+
+/* Style cho tab content */
+.tab-content {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    min-height: 300px; /* Đảm bảo chiều cao đồng đều */
+}
+
+.tab-content.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Style cho user info */
+.user-info-card {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #ddd;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #eee;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: bold;
+    color: #555;
+    font-size: 1rem;
+}
+
+.info-value {
+    color: #333;
+    font-size: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #555;
+    font-size: 1rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+button,
+.btn-submit {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #BF4547;
+    color: #fff;
+    border: none;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover,
+.btn-submit:hover {
+    background-color: #741C10;
+}
+
+
+@media (max-width: 768px) {
+    
+    .main-content {
+        margin-left: 0 !important;
+        padding: 1rem ;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 100vh;
+    }
+
+    
+    .profile-container {
+        width: 90%;
+        max-width: none;
+        margin: 1rem auto; 
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Cố định profile header */
+    .profile-header {
+        position: sticky;
+        top: 0;
+        background-color: #f9f9f9;
+        z-index: 10;
+        padding: 0.5rem 0;
+        width: 100%;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .profile-container h2 {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Điều chỉnh tabs */
+    .profile-tabs {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .tab-button {
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 0.95rem;
+        border-radius: 0.2rem;
+    }
+
+    /* Điều chỉnh tab content */
+    .tab-content {
+        min-height: 350px; /* Cao hơn để đồng đều */
+        width: 100%;
+    }
+
+    /* Điều chỉnh user info */
+    .user-info-card {
+        padding: 1rem;
+    }
+
+    .info-item {
+        flex-direction: row;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .info-label,
+    .info-value {
+        font-size: 0.9rem;
+    }
+
+    /* Điều chỉnh form */
+    .form-group {
+        margin-bottom: 0.75rem;
+    }
+
+    .form-group label {
+        font-size: 0.9rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .form-group input {
+        padding: 0.6rem;
+        font-size: 0.9rem;
+        border-radius: 0.2rem;
+    }
+
+    button,
+    .btn-submit {
+        padding: 0.75rem;
+        font-size: 0.95rem;
+        border-radius: 0.2rem;
+    }
+}
+
+/* Media query cho màn hình rất nhỏ (dưới 480px) */
+@media (max-width: 480px) {
+    .main-content {
+        padding: 0.5rem;
+    }
+
+    .profile-container {
+        margin-top: 5rem;
+        padding: 0.75rem;
+    }
+
+    .profile-header {
+        padding: 0.3rem 0;
+    }
+
+    .profile-container h2 {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-tabs {
+        gap: 0.3rem;
+    }
+
+    .tab-button {
+        padding: 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    .tab-content {
+        min-height: 300px; /* Giảm nhẹ cho màn nhỏ */
+    }
+
+    .user-info-card {
+        padding: 0.75rem;
+    }
+
+    .info-item {
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.3rem;
+    }
+
+    .info-label,
+    .info-value {
+        font-size: 0.85rem;
+    }
+
+    .form-group {
+        margin-bottom: 0.5rem;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .form-group input {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    button,
+    .btn-submit {
+        padding: 0.6rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Media query cho màn hình cực nhỏ (dưới 360px) */
+@media (max-width: 360px) {
+    .profile-container {
+        margin: 6rem auto;
+        padding: 0.5rem;
+    }
+
+    .profile-header {
+        padding: 0.2rem 0;
+    }
+
+    .profile-container h2 {
+        font-size: 1rem;
+    }
+
+    .tab-button {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .tab-content {
+        min-height: 250px;
+    }
+
+    .form-group label {
+        font-size: 0.8rem;
+    }
+
+    .form-group input {
+        padding: 0.4rem;
+        font-size: 0.8rem;
+    }
+
+    button,
+    .btn-submit {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+}

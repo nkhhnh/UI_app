@@ -1,0 +1,446 @@
+
+
+* {
+    font-family: "Poppins", sans-serif;
+    --color-hover: #730C02;
+    --transition: all 0.2s ease;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    width: 50px;
+    height: 100%;
+    padding: 8px 16px;
+    transition: var(--transition);
+}
+
+.sidebar.expand {
+    width: 250px;
+    transition: var(--transition);
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.nav-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.nav-header .logo {
+    color: #F21905;
+    font-size: 40px;
+    
+    font-weight: bold;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.sidebar.expand .nav-header .logo {
+    opacity: 1;
+    transition: var(--transition);
+}
+
+.nav-header .btn-menu {
+    position: absolute;
+    color: #F21905;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    font-size: 30px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.sidebar.expand .nav-header .btn-menu {
+    margin-right: 0;
+}
+
+.nav-links {
+    margin-top: 20px;
+    height: 100%;
+}
+
+.nav-links li {
+    position: relative;
+    margin: 8px 0;
+    list-style: none;
+}
+
+.nav-links i {
+    color: #fff;
+    height: 50px;
+    min-width: 50px;
+    font-size: 23px;
+    text-align: center;
+    line-height: 50px;
+}
+
+.nav-links li a {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    border-radius: 12px;
+    align-items: center;
+    text-decoration: none;
+}
+
+.nav-links li:hover a {
+    background: var(--color-hover);
+}
+
+.nav-links li:hover i {
+    color: #fff;
+}
+
+.nav-links li a .title {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 400;
+    white-space: nowrap;
+    display: none;
+    transition: var(--transition);
+}
+
+.sidebar.expand .nav-links li a .title {
+    display: block;
+    transition: var(--transition);
+}
+
+.nav-links li:hover a .title {
+    color: #fff;
+}
+
+
+
+
+
+/* Media Queries for Scaling Down and Mobile Behavior */
+
+/* Small screens (up to 600px, mobile devices) */
+@media screen and (max-width: 600px) {
+    .sidebar {
+        width: 40px;
+        padding: 40px 10px;
+        height: auto;
+    }
+
+    .sidebar.expand {
+        width: 140px;
+        height: 100%;
+    }
+
+    .nav-header {
+        height: 45px;
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-header .logo {
+        color: #F21905;
+        font-size: 20px;
+        font-weight: 600;
+        opacity: 0;
+        transition: var(--transition);
+    }
+
+    .sidebar.expand .nav-header .logo {
+        opacity: 1;
+    }
+
+    .nav-header .btn-menu {
+        font-size: 18px;
+        margin-right: 8px;
+    }
+
+    .nav-links {
+        margin-top: 15px;
+        display: none;
+    }
+
+    .sidebar.expand .nav-links {
+        display: block;
+    }
+
+    .nav-links li {
+        margin: 6px 0;
+    }
+
+    .nav-links i {
+        height: 40px;
+        min-width: 40px;
+        font-size: 18px;
+        line-height: 40px;
+    }
+
+    .nav-links li a {
+        border-radius: 8px;
+    }
+
+    .nav-links li a .title {
+        font-size: 12px;
+    }
+    .nav-links li a.disabled {
+       
+        background: gray !important; 
+        cursor: not-allowed;
+    }
+  
+}
+
+/* Medium screens (601px to 900px, tablets) */
+@media screen and (min-width: 601px) and (max-width: 900px) {
+    .sidebar {
+        width: 65px;
+        padding: 6px 12px;
+    }
+
+    .sidebar.expand {
+        width: 220px;
+    }
+
+    .nav-header {
+        height: 55px;
+    }
+
+    .nav-header .logo {
+        font-size: 21px;
+    }
+
+    .nav-header .btn-menu {
+        font-size: 21px;
+        margin-right: 8px;
+    }
+
+    .nav-links {
+        margin-top: 18px;
+    }
+
+    .nav-links li {
+        margin: 7px 0;
+    }
+
+    .nav-links i {
+        height: 45px;
+        min-width: 45px;
+        font-size: 21px;
+        line-height: 45px;
+    }
+
+    .nav-links li a {
+        border-radius: 10px;
+    }
+
+    .nav-links li a .title {
+        font-size: 14px;
+    }
+    .nav-links li a.disabled {
+         /* Chuyển màu xám, không làm mờ */
+        background: gray !important; /* Bỏ background của .active */
+        cursor: not-allowed;
+    }
+    
+}
+
+/* Large screens (above 900px, desktops) */
+@media screen and (min-width: 901px) {
+    /* Original styles apply, no changes needed */
+}
+
+
+.nav-links li a.active {
+    background: #F21905;
+}
+
+.nav-links li.active i,
+.nav-links li.active a .title {
+    color: #fff;
+}
+
+/* Style cho sidebar fallback */
+.sidebar.fallback {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    width: 50px;
+    height: 100%;
+    padding: 8px 16px;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.sidebar.fallback .nav-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.sidebar.fallback .logo {
+    color: #F21905;
+    font-size: 50px;
+    font-weight: 1000;
+    opacity: 0;
+}
+
+.sidebar.fallback .nav-links {
+    margin-top: 20px;
+    height: 100%;
+}
+
+.sidebar.fallback .nav-links li {
+    position: relative;
+    margin: 8px 0;
+    list-style: none;
+}
+
+.sidebar.fallback .nav-links a {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    border-radius: 12px;
+    align-items: center;
+    text-decoration: none;
+    color: #fff;
+    padding: 15px 0;
+    text-align: center;
+}
+
+.sidebar.fallback .nav-links a:hover {
+    background: var(--color-hover);
+}
+
+/* Style cho main content */
+.main-content {
+    margin-left: 50px;
+    padding: 20px;
+    transition: var(--transition);
+}
+
+.sidebar.expand ~ .main-content {
+    margin-left: 250px;
+}
+
+/* Style cho network status */
+.network-status {
+    font-size: 0.9em;
+    transition: opacity 0.3s ease;
+}
+
+/* Media Queries cho main content */
+@media screen and (max-width: 600px) {
+    .main-content {
+        margin-left: 40px;
+        padding: 15px;
+    }
+
+    .sidebar.expand ~ .main-content {
+        margin-left: 140px;
+    }
+}
+
+@media screen and (min-width: 601px) and (max-width: 900px) {
+    .main-content {
+        margin-left: 65px;
+        padding: 18px;
+    }
+
+    .sidebar.expand ~ .main-content {
+        margin-left: 220px;
+    }
+}
+
+.custom-confirm-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px;
+    background: #e3ddcd;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    z-index: 2000;
+    width: 400px;
+    max-width: 22%;
+    transition: all 0.3s ease;
+}
+
+.custom-confirm-box p {
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+.confirm-btn, .cancel-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.confirm-btn {
+    background: #28a745;
+    color: #fff;
+    margin-right: 30px;
+}
+
+.cancel-btn {
+    background: #dc3545;
+    color: #fff;
+}
+
+.confirm-btn:hover, .cancel-btn:hover {
+    opacity: 0.9;
+}
+
+.custom-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1999;
+}
+
+
+@media (max-width: 768px) {
+    .custom-confirm-box {
+        width: 80%;
+        padding: 15px;
+        max-width: 300px;
+    }
+    .custom-confirm-box p {
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+    .confirm-btn, .cancel-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    .confirm-btn {
+        margin-right: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .custom-confirm-box {
+        width: 44%;
+        padding: 10px;
+    }
+    .custom-confirm-box p {
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+    .confirm-btn, .cancel-btn {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    .confirm-btn {
+        margin-right: 21px;
+    }
+}
