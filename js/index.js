@@ -5,17 +5,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const contactContainer = document.querySelector('.contact-container');
 
     if (!sidebarPlaceholder || !musicContainer || !weatherContainer || !contactContainer) {
-        if (window.showNotification) showNotification('Lỗi giao diện trang chủ!', 'error');
+       
         return;
     }
 
     const isOffline = !navigator.onLine;
 
-    const links = [
-        { container: musicContainer, href: 'musicplayer.html', message: 'Chuyển đến trang nghe nhạc...' },
-        { container: weatherContainer, href: 'weather.html', message: 'Chuyển đến trang thời tiết...' },
-        { container: contactContainer, href: 'contact.html', message: 'Chuyển đến trang liên hệ...' }
-    ];
+   
 
     // Vô hiệu hóa liên kết "Weather" và "User" khi offline
     links.forEach(({ container, href }) => {

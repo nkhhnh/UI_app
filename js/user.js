@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     
         // Định nghĩa API_BASE_URL từ state.js
-        const API_BASE_URL = 'https://api-music-weather.onrender.com/api';
+        const API_BASE_URL = 'http://127.0.0.1:8000/api';
     
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, config);

@@ -16,7 +16,11 @@
     padding: 8px 16px;
     transition: var(--transition);
 }
+.sidebar-layout{
+    width: 100px;
+    height: 100vh;
 
+}
 .sidebar.expand {
     width: 250px;
     transition: var(--transition);

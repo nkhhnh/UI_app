@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('https://api-music-weather.onrender.com/api/users/forgotpassword', {
+            const response = await fetch('http://127.0.0.1:8000/api/users/forgotpassword', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -6,26 +6,48 @@
 body {
     font-family: Georgia, 'Times New Roman', Times, serif;
     background-color: #e5d1ad;
-    user-select: none; 
+    user-select: none;
     -webkit-user-select: none;
+    display: flex;
+    overflow: hidden;
 }
-h1{
-    position: fixed;
-    top: 40px;
-    right: 36%;
+
+.page-content {
+    flex: 1;
+}
+
+h1 {
+    margin: 30px 0 20px 0;
+    text-align: center;
     font-size: 40px;
-    
 }
-.music-container,
-.weather-container,
-.contact-container {
+
+.image {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.music-container-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+.music-container {
+    display: flex;
     position: relative;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
 }
 
 .img-weather,
 .img-music,
-.img-contact {
-    position: fixed;
+.contact-image {
     width: 300px;
     height: 500px;
     border-radius: 20px;
@@ -36,29 +58,25 @@ h1{
 }
 
 .img-weather {
-    top: 20%;
-    right: 8%;
     background: #d4ad42;
 }
 
 .img-music {
-    top: 20%;
-    left: 20%;
     background: #577c52;
 }
 
-.img-contact {
-    top: 20%;
-    left: 46%;
-    background: none;
+.contact-image {
+    background: #2f3827;
 }
+
 a.disabled {
     pointer-events: none;
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.object {
+.object,
+.object-contact {
     position: absolute;
     top: 0;
     left: 0;
@@ -73,24 +91,15 @@ a.disabled {
 }
 
 .object-contact {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-size: contain;
-    background-repeat: no-repeat;
     background-image: url(/image/contact.png);
-    
-   
 }
 
 .img-weather .object {
-    background-image: url(/image/weather.png);
+    background-image: url(/image/weather.png); /* Thay bằng hình ngựa vằn nếu cần */
 }
 
 .img-music .object {
-    background-image: url(/image/music.png);
+    background-image: url(/image/music.png); /* Thay bằng hình ngựa với micro nếu cần */
 }
 
 .text {
@@ -105,30 +114,7 @@ a.disabled {
     text-align: center;
     font-weight: bolder;
     z-index: 3;
-}
-
-.img-weather .text,
-.img-music .text,
-.img-contact .text {
     font-size: 20px;
-}
-
-.img-weather:hover,
-.img-music:hover,
-.img-contact:hover {
-    filter: grayscale(0%);
-}
-
-.img-weather:hover .object,
-.img-music:hover .object {
-    filter: grayscale(0%);
-    transform: translateY(49.5px);
-}
-
-.img-weather:hover .text,
-.img-music:hover .text,
-.img-contact:hover .text {
-    opacity: 1;
 }
 
 a {
@@ -143,219 +129,104 @@ a {
     font-size: 30px;
     font-weight: bold;
     color: #BF4547;
-    opacity: 0; /* Ẩn mặc định trên desktop */
-    transition: opacity 0.3s ease-in-out; /* Hiệu ứng mượt */
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
 }
 
-/* Hover cho music-container */
-.music-container:hover .img-music,
-.music-container:hover .img-music .object {
-    filter: grayscale(0%);
-}
-
-.music-container:hover .img-music .object {
-    transform: translateY(49.5px);
-}
-
-.music-container:hover .img-music .text {
-    opacity: 1;
-}
-
-.music-container:hover .edge-text {
-    opacity: 1;
-}
-
-/* Hover cho weather-container */
-.weather-container:hover .img-weather,
-.weather-container:hover .img-weather .object {
-    filter: grayscale(0%);
-}
-
-.weather-container:hover .img-weather .object {
-    transform: translateY(49.5px);
-}
-
-.weather-container:hover .img-weather .text {
-    opacity: 1;
-}
-
-.weather-container:hover .edge-text {
-    opacity: 1;
-}
-
-/* Hover cho contact-container */
-.contact-container:hover .img-contact {
-    filter: grayscale(0%);
-}
-
-.contact-container:hover .img-contact .text {
-    opacity: 1;
-}
-
-/* Trạng thái hovered cho music-container */
-.music-container.hovered .img-music,
-.music-container.hovered .img-music .object {
-    filter: grayscale(0%);
-}
-
-.music-container.hovered .img-music .object {
-    transform: translateY(49.5px);
-}
-
-.music-container.hovered .img-music .text {
-    opacity: 1;
-}
-
-.music-container.hovered .edge-text {
-    opacity: 1;
-}
-
-/* Trạng thái hovered cho weather-container */
-.weather-container.hovered .img-weather,
-.weather-container.hovered .img-weather .object {
-    filter: grayscale(0%);
-}
-
-.weather-container.hovered .img-weather .object {
-    transform: translateY(49.5px);
-}
-
-.weather-container.hovered .img-weather .text {
-    opacity: 1;
-}
-
-.weather-container.hovered .edge-text {
-    opacity: 1;
-}
-
-.contact-container.hovered .img-contact {
-    filter: grayscale(0%);
-}
-
-.contact-container.hovered .img-contact {
-    opacity: 1;
-}
-.contact-container.hovered .edge-text {
-    opacity: 1;
-}
-
-.top-w {
-    position: fixed;
-    top: 90px;
-    right: 200px;
-}
-
-.top-m {
-    position: fixed;
-    top: 90px;
-    left: 390px;
-}
-.top-c {
-    position: fixed;
-    top: 600px;
-    right: 630px;
-    
-}
-
-.bottom-w {
-    position: fixed;
-    bottom: 20px;
-    right: 200px;
-}
-
-.bottom-m {
-    position: fixed;
-    bottom: 20px;
-    left: 390px;
-}
-
-.left-m {
-    position: fixed;
-    top: 200px;
-    left: 260px;
+.text-side {
     writing-mode: vertical-lr;
     text-orientation: upright;
 }
 
-.left-w {
-    position: fixed;
-    top: 200px;
-    right: 80px;
-    writing-mode: vertical-lr;
-    text-orientation: upright;
+/* Hiệu ứng khi hover vào .music-container */
+.image .music-container:hover .img-music,
+.image .music-container:hover .img-weather,
+.image .music-container:hover .contact-image {
+    filter: grayscale(0%);
 }
 
-.right-m {
-    position: fixed;
-    top: 200px;
-    left: 610px;
-    writing-mode: vertical-lr;
-    text-orientation: upright;
+.image .music-container:hover .img-music .object,
+.image .music-container:hover .img-weather .object {
+    filter: grayscale(0%);
+    transform: translateY(49.5px);
 }
 
-.right-w {
-    position: fixed;
-    top: 200px;
-    right: 425px;
-    writing-mode: vertical-lr;
-    text-orientation: upright;
+.image .music-container:hover .contact-image .object-contact {
+    filter: grayscale(0%);
 }
 
-/* Media query cho mobile (dưới 870px) */
+.image .music-container:hover .text {
+    opacity: 1;
+}
+
+.image .music-container:hover .edge-text {
+    opacity: 1;
+}
+
+/* Hiệu ứng khi hover vào .hover-all: áp dụng cho tất cả .music-container */
+.image:has(.hover-all:hover) .music-container .img-music,
+.image:has(.hover-all:hover) .music-container .img-weather,
+.image:has(.hover-all:hover) .music-container .contact-image {
+    filter: grayscale(0%);
+}
+
+.image:has(.hover-all:hover) .music-container .img-music .object,
+.image:has(.hover-all:hover) .music-container .img-weather .object {
+    filter: grayscale(0%);
+    transform: translateY(49.5px);
+}
+
+.image:has(.hover-all:hover) .music-container .contact-image .object-contact {
+    filter: grayscale(0%);
+    transform: translateY(49.5px);
+}
+
+.image:has(.hover-all:hover) .music-container .text {
+    opacity: 1;
+}
+
+.image:has(.hover-all:hover) .music-container .edge-text {
+    opacity: 1;
+}
+
 @media (max-width: 870px) {
-    .img-weather,
-    .img-music ,.img-contact{
-        position: fixed;
-        width: 300px;
-        height: 300px;
-        border-radius: 20px;
-        z-index: 1;
-        overflow: hidden;
-        filter: grayscale(0%);
-    }
-
-    .img-weather {
-        top: 50%;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #c6a754;
-    }
-
-    .img-music {
-        top: 10%;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #577c52;
-    }
-
-    .img-contact {
-        top: 80%;
-        left: 50%;
-        transform: translateX(-50%);
-        
-    }
-
-    h1{
-        position: fixed;
-        top: 47px;
-        right: 35%;
-        font-size: 20px;
-        
-    }
-    .object {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-size: contain;
-        background-repeat: no-repeat;
-        filter: grayscale(0%);
-        transform: translateY(60px);
-        transition: none;
-        z-index: 2;
-    }
     
+    .image {
+        gap: 10px; 
+        justify-content: center; 
+        
+    }
+
+   
+    .music-container {
+        gap: 4px; 
+    }
+
+    .music-container-center {
+        gap: 4px; 
+    }
+
+    .img-weather,
+    .img-music,
+    .contact-image {
+       
+        border-radius: 12px;
+        background: none; 
+       
+    }
+
+    .object,
+    .object-contact {
+      
+        filter: grayscale(0%); 
+        margin-bottom: 10rem;
+    }
+
+    .object-contact {
+        background-image: url(/image/contact2.png);
+        
+    }
+
     .img-weather .object {
         background-image: url(/image/weather2.png);
     }
@@ -363,126 +234,137 @@ a {
     .img-music .object {
         background-image: url(/image/music2.png);
     }
-    .img-contact .object-contact {
-        background-image: url(/image/contact2.png);
-    }
 
     .text {
-        display: none;
-    }
-
-    .img-weather .text,
-    .img-music .text {
-        font-size: 12px;
+        font-size: 14px;
+        opacity: 0; /* Ẩn text */
     }
 
     .edge-text {
-        opacity: 1; /* Luôn hiển thị */
-        font-size: 30px; /* Giảm kích thước cho phù hợp */
+        font-size: 20px; /* Giảm kích thước chữ cho cân đối */
+        opacity: 1; 
     }
 
-    .top-w {
-        top: 46%;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-        writing-mode: horizontal-tb;
+    .text-side {
+        font-size: 18px; /* Giảm kích thước chữ dọc */
     }
 
-    .top-m {
-        top: 16%;
-        left: 50%;
-        transform: translateX(-50%);
-        writing-mode: horizontal-tb;
+    /* Tắt hiệu ứng hover */
+    .image .music-container:hover .img-music,
+    .image .music-container:hover .img-weather,
+    .image .music-container:hover .contact-image,
+    .image:has(.hover-all:hover) .music-container .img-music,
+    .image:has(.hover-all:hover) .music-container .img-weather,
+    .image:has(.hover-all:hover) .music-container .contact-image {
+        filter: grayscale(0%);
     }
 
-    .top-c {
-        bottom: 30%;
-        left: 50%;
-        transform: translateX(-50%);
-        writing-mode: horizontal-tb;
+    .image .music-container:hover .img-music .object,
+    .image .music-container:hover .img-weather .object,
+    .image .music-container:hover .contact-image .object-contact,
+    .image:has(.hover-all:hover) .music-container .img-music .object,
+    .image:has(.hover-all:hover) .music-container .img-weather .object,
+    .image:has(.hover-all:hover) .music-container .contact-image .object-contact {
+        transform: translateY(30px); /* Giữ nguyên vị trí, không thay đổi khi hover */
     }
-    .bottom-w,
-    .bottom-m,
-    .left-w,
-    .left-m,
-    .right-w,
-    .right-m {
-        display: none; /* Ẩn văn bản dọc để tránh rối */
+
+    .image .music-container:hover .text,
+    .image:has(.hover-all:hover) .music-container .text {
+        opacity: 0; /* Ẩn text khi hover */
+    }
+
+    .image .music-container:hover .edge-text,
+    .image:has(.hover-all:hover) .music-container .edge-text {
+        opacity: 1; /* Giữ edge-text hiển thị */
     }
 }
 
-/* Media query cho mobile nhỏ hơn (dưới 570px) */
+
 @media (max-width: 570px) {
+    .image {
+        gap: 8px;
+        justify-content: center;
+        margin: 0px 30% 0px 0px;
+    }
+    h1{
+        left: 40%;
+        
+    }
+    .music-container {
+        gap: 2px; /* Giảm khoảng cách trong music-container */
+    }
+
+    .music-container-center {
+        gap: 2px; /* Giảm khoảng cách trong music-container-center */
+    }
+
     .img-weather,
-    .img-music ,.img-contact{
-        width: 200px;
-        height: 170px;
-        border-radius: 15px;
-        filter: grayscale(0%);
+    .img-music,
+    .contact-image {
+        width: 130px; /* Giảm kích thước để vừa màn hình nhỏ */
+        height: 220px;
+        border-radius: 8px;
+        background: none; /* Xóa nền */
+        filter: grayscale(0%); /* Hình ảnh giữ màu gốc */
     }
 
-    .img-weather {
-        top: 45%;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #c6a754;
+    .object,
+    .object-contact {
+        transform: translateY(20px); 
     }
 
-    .img-music {
-        top: 15%;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #577c52;
-    }
-    .img-contact {
-        top: 75%;
-        left: 50%;
-        transform: translateX(-50%);
-        background: none;
+    .object-contact {
+        background-image: url(/image/contact2.png);
     }
 
-    .object {
-        filter: grayscale(0%);
-        transform: translateY(40px);
+    .img-weather .object {
+        background-image: url(/image/weather2.png);
+    }
+
+    .img-music .object {
+        background-image: url(/image/music2.png);
     }
 
     .text {
-        display: none;
+        font-size: 10px;
+        opacity: 0;
     }
 
     .edge-text {
-        opacity: 1; /* Luôn hiển thị */
-        font-size: 14px; /* Giảm thêm kích thước */
-        white-space: nowrap;
+        font-size: 14px; 
+        opacity: 1; 
     }
 
-    .top-w {
-        top: 42%;
-        left: 50%;
-        transform: translateX(-50%);
-        writing-mode: horizontal-tb;
+    .text-side {
+        font-size: 10px; 
     }
 
-    .top-c {
-        top: 72%;
-        left: 40% ;
-        transform: translateX(-50%);
-        writing-mode: horizontal-tb;
-    }
-    .top-m {
-        top: 12%;
-        left: 50%;
-        transform: translateX(-50%);
-        writing-mode: horizontal-tb;
+   
+    .image .music-container:hover .img-music,
+    .image .music-container:hover .img-weather,
+    .image .music-container:hover .contact-image,
+    .image:has(.hover-all:hover) .music-container .img-music,
+    .image:has(.hover-all:hover) .music-container .img-weather,
+    .image:has(.hover-all:hover) .music-container .contact-image {
+        filter: grayscale(0%);
     }
 
-    .bottom-w,
-    .bottom-m,
-    .left-w,
-    .left-m,
-    .right-w,
-    .right-m {
-        display: none;
+    .image .music-container:hover .img-music .object,
+    .image .music-container:hover .img-weather .object,
+    .image .music-container:hover .contact-image .object-contact,
+    .image:has(.hover-all:hover) .music-container .img-music .object,
+    .image:has(.hover-all:hover) .music-container .img-weather .object,
+    .image:has(.hover-all:hover) .music-container .contact-image .object-contact {
+        transform: translateY(20px); 
+    }
+
+    .image .music-container:hover .text,
+    .image:has(.hover-all:hover) .music-container .text {
+        opacity: 0; /* Ẩn text khi hover */
+    }
+
+    .image .music-container:hover .edge-text,
+    .image:has(.hover-all:hover) .music-container .edge-text {
+        opacity: 1; /* Giữ edge-text hiển thị */
     }
 }
