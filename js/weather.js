@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
             body.setAttribute('class', 'stormy');   
         } else if (weatherDescription.includes('tuyết') || weatherDescription.includes('mưa tuyết')) {
             body.setAttribute('class', 'snowy');
-        }else {
+        } else {
             body.setAttribute('class', 'default');
         }
 
@@ -92,19 +92,19 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             return;
         }
-    
+
         const dailyForecasts = [];
         const today = new Date().setHours(0, 0, 0, 0) / 1000;
         let currentDay = null;
         let dailyData = null;
-    
+
         // Nhóm dữ liệu theo ngày
         data.list.forEach(item => {
             const itemDate = new Date(item.dt * 1000);
             const itemDay = itemDate.setHours(0, 0, 0, 0) / 1000;
-    
+
             if (itemDay <= today) return; // Bỏ qua ngày hiện tại
-    
+
             if (itemDay !== currentDay) {
                 if (dailyData) dailyForecasts.push(dailyData);
                 currentDay = itemDay;
@@ -123,16 +123,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         if (dailyData) dailyForecasts.push(dailyData);
-    
-    
+
         const fiveDayForecast = dailyForecasts.slice(0, 5);
+        if (fiveDayForecast.length < 5) {
+            console.warn(`Chỉ có ${fiveDayForecast.length} ngày dữ liệu, cần 5 ngày.`);
+            if (window.showNotification) showNotification(`Chỉ có dữ liệu cho ${fiveDayForecast.length} ngày!`, 'info');
+        }
+
         fiveDayForecast.forEach((day, index) => {
             const forecastDay = document.querySelector(`.forecast-day[data-day="${index + 1}"]`);
             if (forecastDay) {
                 const pop = Math.round(day.pop * 100);
                 const icon = `https://openweathermap.org/img/wn/${day.icon}@2x.png`;
                 const dateMonth = getDateMonth(day.date);
-    
+
                 forecastDay.querySelector('.desc').innerText = dateMonth;
                 const img = forecastDay.querySelector('img');
                 img.src = icon;
@@ -141,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 forecastDay.style.display = 'block'; 
             }
         });
-    
+
         // Xử lý các ô dự báo không có dữ liệu
         for (let i = fiveDayForecast.length + 1; i <= 5; i++) {
             const forecastDay = document.querySelector(`.forecast-day[data-day="${i}"]`);
@@ -153,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
+
     async function changeWeatherUI(locationSearch) {
         if (!locationSearch) {
             if (window.showNotification) showNotification('Vui lòng nhập tên thành phố!', 'info');
@@ -164,7 +169,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             apiCallCounter += 2;
-            
             localStorage.setItem('apiCallCounter', apiCallCounter);
 
             const [currentResponse, forecastResponse] = await Promise.all([
@@ -177,6 +181,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if (currentData.cod !== 200) {
                 content.classList.add('hide');
                 if (window.showNotification) showNotification('Thành phố không tồn tại!', 'error');
+                return;
+            }
+
+            if (forecastData.cod !== "200") {
+                console.warn('API dự báo thất bại:', forecastData);
+                if (window.showNotification) showNotification('Không lấy được dữ liệu dự báo!', 'error');
                 return;
             }
 
@@ -193,7 +203,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     forecastDay.querySelector('.pop').innerText = '-';
                 }
             }
-            if (window.showNotification) showNotification('Không kết nối được API thời tiết!', 'error');
+            if (window.showNotification) showNotification('Không kết nối được dữ liệu thời tiết!', 'error');
+            console.error('Lỗi API:', error);
         }
     }
 
@@ -204,7 +215,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Lắng nghe sự kiện thay đổi trạng thái mạng
     window.addEventListener('online', checkNetworkStatus);
     window.addEventListener('offline', checkNetworkStatus);
 
