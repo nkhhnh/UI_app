@@ -94,35 +94,45 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const dailyForecasts = [];
-        const today = new Date().setHours(0, 0, 0, 0) / 1000;
-        let currentDay = null;
-        let dailyData = null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayTimestamp = today.getTime() / 1000;
+
+        // Tạo một object để lưu dữ liệu theo ngày
+        const forecastByDay = {};
 
         // Nhóm dữ liệu theo ngày
         data.list.forEach(item => {
             const itemDate = new Date(item.dt * 1000);
-            const itemDay = itemDate.setHours(0, 0, 0, 0) / 1000;
+            const itemDayTimestamp = itemDate.setHours(0, 0, 0, 0) / 1000;
 
-            if (itemDay <= today) return; // Bỏ qua ngày hiện tại
+            if (itemDayTimestamp <= todayTimestamp) return; // Bỏ qua ngày hiện tại
 
-            if (itemDay !== currentDay) {
-                if (dailyData) dailyForecasts.push(dailyData);
-                currentDay = itemDay;
-                dailyData = {
+            const dayKey = itemDayTimestamp;
+            if (!forecastByDay[dayKey]) {
+                forecastByDay[dayKey] = {
                     date: new Date(item.dt * 1000),
                     pop: item.pop,
                     icon: item.weather[0].icon,
-                    description: item.weather[0].description
+                    description: item.weather[0].description,
+                    count: 1
                 };
             } else {
-                dailyData.pop = Math.max(dailyData.pop, item.pop);
+                // Cập nhật xác suất mưa cao nhất
+                forecastByDay[dayKey].pop = Math.max(forecastByDay[dayKey].pop, item.pop);
+                forecastByDay[dayKey].count += 1;
+                // Ưu tiên dữ liệu lúc 12h trưa
                 if (itemDate.getHours() === 12) {
-                    dailyData.icon = item.weather[0].icon;
-                    dailyData.description = item.weather[0].description;
+                    forecastByDay[dayKey].icon = item.weather[0].icon;
+                    forecastByDay[dayKey].description = item.weather[0].description;
                 }
             }
         });
-        if (dailyData) dailyForecasts.push(dailyData);
+
+        // Chuyển dữ liệu thành mảng và sắp xếp theo ngày
+        Object.values(forecastByDay).sort((a, b) => a.date - b.date).forEach(day => {
+            dailyForecasts.push(day);
+        });
 
         const fiveDayForecast = dailyForecasts.slice(0, 5);
         if (fiveDayForecast.length < 5) {
@@ -130,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (window.showNotification) showNotification(`Chỉ có dữ liệu cho ${fiveDayForecast.length} ngày!`, 'info');
         }
 
+        // Cập nhật giao diện cho các ngày có dữ liệu
         fiveDayForecast.forEach((day, index) => {
             const forecastDay = document.querySelector(`.forecast-day[data-day="${index + 1}"]`);
             if (forecastDay) {
