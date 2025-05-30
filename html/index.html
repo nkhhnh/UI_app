@@ -1,51 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no,viewport-fit=cover">
-        <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    
-    
-        <!-- <link rel="manifest" href="/manifest.json"> -->
-        <meta name="theme-color" content="#000000">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-status-bar-style" content="black">
-        <link rel="apple-touch-icon" href="/image/192x192.png">
-        
-        <link rel="stylesheet" href="/css/pagetrans.css" />
-        <link rel="stylesheet" href="/css/nav.css" />
-    
-    
-        <link rel="stylesheet" href="/asset/fontawesome/css/all.min.css">
-        <link rel="stylesheet" href="/asset/boxicons/css/boxicons.min.css">
-    
-        
-        <link rel="stylesheet" href="/css/index.css">
-        <link rel="icon" href="/image/logo.png" type="image/x-icon">
-        <title>Home</title>
-    </head>
-<body class="">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no,viewport-fit=cover"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+    <!-- <link rel="manifest" href="/manifest.json"> -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <link rel="apple-touch-icon" href="/image/192x192.png" />
+
+    <link rel="stylesheet" href="/css/pagetrans.css" />
+    <link rel="stylesheet" href="/css/nav.css" />
+
+    <link rel="stylesheet" href="/asset/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="/asset/boxicons/css/boxicons.min.css" />
+
+    <link rel="stylesheet" href="/css/index.css" />
+    <link rel="stylesheet" href="/css/img-home.css" />
+    <link rel="icon" href="/image/logo.png" type="image/x-icon" />
+    <title>Home</title>
+  </head>
+  <body class="">
     <div class="sidebar-layout">
-        <div id="sidebar-placeholder">
-            <section class="sidebar fallback" style="display: none;">
-                <div class="nav-header">
-                    <p class="logo">MUSIC</p>
-                </div>
-                <ul class="nav-links">
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="user.html">User</a></li>
-                    <li><a href="weather.html">Weather</a></li>
-                    <li><a href="musicplayer.html">Music</a></li>
-                    <li><a href="contact.html">Contact</a></li>
-                    <li><a href="login.html" id="fallback-auth-link">Login</a></li>
-                </ul>
-            </section>
-        </div>
+      <div id="sidebar-placeholder">
+        <section class="sidebar fallback" style="display: none">
+          <div class="nav-header">
+            <p class="logo">MUSIC</p>
+          </div>
+          <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="user.html">User</a></li>
+            <li><a href="weather.html">Weather</a></li>
+            <li><a href="musicplayer.html">Music</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="login.html" id="fallback-auth-link">Login</a></li>
+          </ul>
+        </section>
+      </div>
     </div>
     <div class="page-content">
-        <h1>TRANG CHỦ</h1>
-        <div class="content-wrapper">
-            <div class="image">
+      <h1>TRANG CHỦ</h1>
+      <div class="content-wrapper">
+        <!-- <div class="image">
                 <div class="music-container">
                     <div class="edge-text">ÂM NHẠC</div>
                     <a href="musicplayer.html" class="music-container-center">
@@ -84,13 +85,57 @@
                     </a>
                     <div class="edge-text">DỰ BÁO</div>
                 </div>
+            </div> -->
+
+        <ul class="home_list_image">
+          <li class="home_list_item both_active">
+            <p class="edge-text">ÂM NHẠC</p>
+            <div class="home_list_redirect">
+              <div class="text-side edge-text">GIẢI TRÍ</div>
+              <div class="container_img">
+                <div class="home_list_text text_in_img">Nghe Nhạc Nào!!!</div>
+                <a href="" class="home_img_pc"> <img src="../image/music.png" /></a>
+                <a href="" class="home_img_mb"> <img src="../image/music2.png" /></a>
+              </div>
+              <div class="text-side edge-text">GIAI ĐIỆU</div>
             </div>
-        </div>
+            <p class="edge-text">CẢM XÚC</p>
+          </li>
+          <li class="home_list_item">
+            <p class="edge-text">LIÊN HỆ</p>
+            <div class="home_list_redirect">
+              <div class="text-side edge-text">KẾT NỐI</div>
+              <div class="container_img both_hover">
+                <div class="home_list_text text_in_img">Cứu em + STK</div>
+                <a href="" class="home_img_pc"> <img src="../image/contact.png" /></a>
+                <a href="" class="home_img_mb"> <img src="../image/contact2.png" /></a>
+                
+              </div>
+              <div class="text-side edge-text">HỖ TRỢ</div>
+            </div>
+            <p class="edge-text">NHẮN TIN</p>
+          </li>
+          <li class="home_list_item both_active">
+            <p class="edge-text">THỜI TIẾT</p>
+            <div class="home_list_redirect">
+              <div class="text-side edge-text">GIÓ MÂY</div>
+              <div class="container_img">
+                <div class="home_list_text text_in_img">Cẩn Thận Trời Mưa Nhé!!!</div>
+                <a href="" class="home_img_pc"> <img src="../image/weather.png" /></a>
+                <a href="" class="home_img_mb"> <img src="../image/weather2.png" /></a>
+
+              </div>
+              <div class="text-side edge-text">NẮNG MƯA</div>
+            </div>
+            <p class="edge-text">DỰ BÁO</p>
+          </li>
+        </ul>
+      </div>
     </div>
     <script src="/js/nav.js"></script>
     <script src="/js/logout.js"></script>
     <script src="/js/pagetrans.js"></script>
     <script src="/js/index.js"></script>
     <script src="/js/service-worker-register.js"></script>
-</body>
+  </body>
 </html>
