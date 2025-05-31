@@ -70,19 +70,23 @@
   transform: scale(1.05);
 }
 
-@media (min-width: 1061px) and (max-width: 1260px) {
+@media (max-width: 1260px) {
   .home_list_image img {
     height: 350px;
   }
 }
 
-@media (min-width: 1051px) and (max-width: 1060px) {
+@media (max-width: 1060px) {
   .home_list_image img {
     height: 350px;
   }
 }
 
 @media (max-width: 1050px) {
+  .sidebar-layout {
+    width: 0px;
+    height: 0px;
+  }
   .home_img_mb {
     display: block;
   }
