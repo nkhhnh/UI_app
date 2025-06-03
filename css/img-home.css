@@ -96,10 +96,10 @@
   .home_list_image {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 10px;
   }
   .home_list_image img {
-    height: 150px;
+    height: 140px;
     filter: grayscale(0%);
   }
   .edge-text {
