@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-    const musicContainer = document.querySelector('.music-container');
-    const weatherContainer = document.querySelector('.weather-container');
-    const contactContainer = document.querySelector('.contact-container');
+    
 
     if (!sidebarPlaceholder || !musicContainer || !weatherContainer || !contactContainer) {
        
@@ -21,18 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    contactContainer.addEventListener('mouseenter', () => {
-        musicContainer.classList.add('hovered');
-        weatherContainer.classList.add('hovered');
-        contactContainer.classList.add('hovered');
-    });
-
-    contactContainer.addEventListener('mouseleave', () => {
-        musicContainer.classList.remove('hovered');
-        weatherContainer.classList.remove('hovered');
-        contactContainer.classList.remove('hovered');
-    });
-
+ 
     links.forEach(({ container, href, message }) => {
         const link = container.querySelector('a');
         if (link) {
