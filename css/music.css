@@ -906,6 +906,29 @@ nav.open .nav-content span {
 
 /* Responsive Adjustments cho Music Control */
 @media (max-width: 870px) {
+    @media (max-width: 870px) {
+  .btn,
+  .nav-content .toggle-btn,
+  .nav-content span button,
+  .add-song-form button,
+  .create-album-btn,
+  .remove-song-btn,
+  .album-input-popup .save-btn,
+  .album-input-popup .cancel-btn ,.music-control__icon,.music-control__icon-play{
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active,
+  .nav-content .toggle-btn:active,
+  .nav-content span button:active,
+  .add-song-form button:active,
+  .create-album-btn:active,
+  .remove-song-btn:active,
+  .album-input-popup .save-btn:active,
+  .album-input-popup .cancel-btn:active,
+  .music-control__icon-play:active {
+    outline: none !important;
+  }
+}
     .main-music-control {
         height: 120px;
         flex-direction: column;
