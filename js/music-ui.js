@@ -256,21 +256,21 @@ function updateSongItemEvents() {
                         return;
                     }
 
-                    const progressBar = item.querySelector('.download-progress-bar');
+                    const progressContainer = item.querySelector('.download-progress-container');
                     item.classList.add('downloading');
-                    if (progressBar) {
-                        progressBar.style.width = '0%';
+                    if (progressContainer) {
+                        progressContainer.style.width = '0%';
                     }
 
                     try {
                         await downloadSong(song.song_id, song.custom_name, (percent) => {
-                            if (progressBar) {
-                                progressBar.style.width = percent !== null ? `${Math.min(100, percent * 100)}%` : '100%';
+                            if (progressContainer) {
+                                progressContainer.style.width = percent !== null ? `${Math.min(100, percent * 100)}%` : '100%';
                             }
                         });
                     } finally {
-                        if (progressBar) {
-                            progressBar.style.width = '100%';
+                        if (progressContainer) {
+                            progressContainer.style.width = '100%';
                         }
                         setTimeout(() => item.classList.remove('downloading'), 500);
                     }
@@ -443,21 +443,21 @@ function updateAlbumItemEvents() {
                         return;
                     }
                     const album = albums.find(a => a.id === parseInt(albumId));
-                    const progressBar = item.querySelector('.download-progress-bar');
+                    const progressContainer = item.querySelector('.download-progress-container');
                     item.classList.add('downloading');
-                    if (progressBar) {
-                        progressBar.style.width = '0%';
+                    if (progressContainer) {
+                        progressContainer.style.width = '0%';
                     }
 
                     try {
                         await downloadAlbum(albumId, album.album_name, (percent) => {
-                            if (progressBar) {
-                                progressBar.style.width = percent !== null ? `${Math.min(100, percent * 100)}%` : '100%';
+                            if (progressContainer) {
+                                progressContainer.style.width = percent !== null ? `${Math.min(100, percent * 100)}%` : '100%';
                             }
                         });
                     } finally {
-                        if (progressBar) {
-                            progressBar.style.width = '100%';
+                        if (progressContainer) {
+                            progressContainer.style.width = '100%';
                         }
                         setTimeout(() => item.classList.remove('downloading'), 500);
                     }
