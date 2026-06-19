@@ -15,13 +15,19 @@ async function loadSongs() {
             }
             if (songs.length === 0) showNotification('Không có bài hát ngoại tuyến nào.', 'info');
         } else {
-            songs = await fetchAPI('/songs');
-            const songsToSave = songs.filter(song =>
-                song.localPath && song.songData instanceof Blob && song.songData.type.startsWith('audio/')
-            );
-            if (songsToSave.length > 0) {
-                await saveToIndexedDB('songs', songsToSave);
-            }
+            const onlineSongs = await fetchAPI('/songs');
+            const localSongs = await loadFromIndexedDB('songs');
+            songs = onlineSongs.map(onlineSong => {
+                const localSong = localSongs.find(s => s && s.song_id === onlineSong.song_id);
+                if (localSong && localSong.songData instanceof Blob) {
+                    return {
+                        ...onlineSong,
+                        localPath: true,
+                        songData: localSong.songData
+                    };
+                }
+                return onlineSong;
+            });
         }
         updateSongList();
     } catch (error) {

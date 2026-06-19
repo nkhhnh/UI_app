@@ -74,6 +74,25 @@ function getNextSongIndex(currentIndex) {
     return -1;
 }
 
+function getNextOfflineSongIndex(currentIndex) {
+    const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
+    if (!songListSource || songListSource.length === 0) return -1;
+    
+    for (let i = currentIndex + 1; i < songListSource.length; i++) {
+        if (songListSource[i] && songListSource[i].songData instanceof Blob) {
+            return i;
+        }
+    }
+    
+    for (let i = 0; i < currentIndex; i++) {
+        if (songListSource[i] && songListSource[i].songData instanceof Blob) {
+            return i;
+        }
+    }
+    
+    return -1;
+}
+
 function getPrevSongIndex(currentIndex) {
     const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
     if (!songListSource || songListSource.length === 0) return -1;
@@ -166,10 +185,6 @@ async function preloadNextSong() {
     const isLoggedIn = !!token;
 
     try {
-        if (preloadAudio) {
-            preloadAudio.src = '';
-            preloadAudio = null;
-        }
         if (preloadedBlobUrl) {
             URL.revokeObjectURL(preloadedBlobUrl);
             preloadedBlobUrl = null;
@@ -181,17 +196,16 @@ async function preloadNextSong() {
         }
         isPreloadComplete = false;
 
-        preloadAudio = new Audio();
         let blobUrl = null;
 
-        if (!isOnline || !isLoggedIn) {
-            if (!song || !song.localPath || !song.songData || !(song.songData instanceof Blob) || !song.songData.type.startsWith('audio/')) {
-                throw new Error('Dữ liệu bài hát ngoại tuyến không hợp lệ: Thiếu songData hoặc định dạng không đúng');
-            }
+        if (song && song.songData instanceof Blob) {
+            // Có sẵn dữ liệu ngoại tuyến
             blobUrl = URL.createObjectURL(song.songData);
             preloadedBlobUrl = blobUrl;
-            preloadAudio.src = blobUrl;
         } else {
+            if (!isOnline || !isLoggedIn) {
+                throw new Error('Bài hát không khả dụng ngoại tuyến');
+            }
             if (!token) throw new Error('Không có mã xác thực');
             const streamUrl = `${API_BASE_URL}/songs/${song.song_id}/stream?token=${token}`;
             
@@ -202,36 +216,15 @@ async function preloadNextSong() {
             const blob = await response.blob();
             blobUrl = URL.createObjectURL(blob);
             preloadedBlobUrl = blobUrl;
-            preloadAudio.src = blobUrl;
             preloadAbortController = null;
         }
 
-        if (!preloadAudio.src) {
+        if (!preloadedBlobUrl) {
             throw new Error('Nguồn âm thanh preload không hợp lệ');
         }
 
-        preloadAudio.preload = 'auto';
-
-        await new Promise((resolve, reject) => {
-            preloadAudio.addEventListener('canplay', () => {
-                resolve();
-            }, { once: true });
-
-            preloadAudio.addEventListener('error', (e) => {
-                if (blobUrl) {
-                    URL.revokeObjectURL(blobUrl);
-                    if (preloadedBlobUrl === blobUrl) preloadedBlobUrl = null;
-                }
-                reject(new Error('Tải trước thất bại do lỗi âm thanh'));
-            }, { once: true });
-        });
-
         isPreloadComplete = true;
     } catch (error) {
-        if (preloadAudio) {
-            preloadAudio.src = '';
-            preloadAudio = null;
-        }
         if (preloadedBlobUrl) {
             URL.revokeObjectURL(preloadedBlobUrl);
             preloadedBlobUrl = null;
@@ -290,22 +283,17 @@ async function appendSong(index, autoPlay = false) {
         if (timeStart) timeStart.textContent = '0:00';
         if (timeDuration) timeDuration.textContent = '0:00';
 
-        if (preloadAudio && nextSongIndex === index && isPreloadComplete) {
+        if (preloadedBlobUrl && nextSongIndex === index && isPreloadComplete) {
             // Preload hoàn thành → phát từ Blob cục bộ (tối ưu cho tắt màn hình)
-            audio.src = preloadAudio.src;
+            audio.src = preloadedBlobUrl;
             activeBlobUrl = preloadedBlobUrl;
             preloadedBlobUrl = null;
-            preloadAudio = null;
             nextSongIndex = -1;
         } else {
             // Hủy preload cũ nếu đang chạy dở
             if (preloadAbortController) {
                 preloadAbortController.abort();
                 preloadAbortController = null;
-            }
-            if (preloadAudio) {
-                preloadAudio.src = '';
-                preloadAudio = null;
             }
             if (preloadedBlobUrl) {
                 URL.revokeObjectURL(preloadedBlobUrl);
@@ -314,13 +302,13 @@ async function appendSong(index, autoPlay = false) {
             isPreloadComplete = false;
             nextSongIndex = -1;
 
-            if (!isOnline || !isLoggedIn) {
-                if (!song.localPath || !song.songData || !(song.songData instanceof Blob) || !song.songData.type.startsWith('audio/')) {
-                    throw new Error('Bài hát không khả dụng ngoại tuyến: Thiếu hoặc dữ liệu không hợp lệ');
-                }
+            if (song && song.songData instanceof Blob) {
+                // Ưu tiên phát từ bản ngoại tuyến trong máy kể cả khi online
                 const localBlobUrl = URL.createObjectURL(song.songData);
                 audio.src = localBlobUrl;
                 activeBlobUrl = localBlobUrl;
+            } else if (!isOnline || !isLoggedIn) {
+                throw new Error('Bài hát không khả dụng ngoại tuyến: Thiếu hoặc dữ liệu không hợp lệ');
             } else {
                 if (!token) throw new Error('Vui lòng đăng nhập.');
                 const streamUrl = `${API_BASE_URL}/songs/${song.song_id}/stream?token=${token}`;
@@ -404,9 +392,21 @@ async function appendSong(index, autoPlay = false) {
         preloadNextSong();
     } catch (error) {
         preparingNotification.remove();
-        showNotification(`Không thể phát bài hát "${song.custom_name}": ${error.message}`, 'error');
-        resetAudioState();
-        updateSongList();
+        showNotification(`Lỗi phát nhạc: ${error.message}. Thử chuyển sang bài ngoại tuyến...`, 'info');
+        
+        const nextOfflineIndex = getNextOfflineSongIndex(index);
+        if (nextOfflineIndex !== -1 && nextOfflineIndex !== index) {
+            setTimeout(() => {
+                appendSong(nextOfflineIndex, autoPlay).catch(err => {
+                    showNotification(`Không thể phát bài ngoại tuyến tiếp theo: ${err.message}`, 'error');
+                    resetAudioState();
+                    updateSongList();
+                });
+            }, 1000);
+        } else {
+            resetAudioState();
+            updateSongList();
+        }
     } finally {
         preparingNotification.remove();
         isLoadingSong = false;
@@ -433,11 +433,7 @@ function resetAudioState() {
     if (pauseIcon) pauseIcon.style.display = 'none';
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     updateSongList();
-    if (preloadAudio) {
-        preloadAudio.src = '';
-        preloadAudio = null;
-        nextSongIndex = -1;
-    }
+    nextSongIndex = -1;
     if (preloadAbortController) {
         preloadAbortController.abort();
         preloadAbortController = null;
