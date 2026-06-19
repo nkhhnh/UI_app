@@ -732,18 +732,16 @@ body {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background-color: rgba(255, 255, 255, 0.02);
-}
-
-.album-item .download-progress-bar {
+    z-index: 0;
     width: 0%;
     height: 100%;
-    background: linear-gradient(90deg, rgba(0,200,83,0.4), rgba(0,200,83,0.12));
+    background: linear-gradient(90deg, rgba(0,200,83,0.35), rgba(0,200,83,0.12), rgba(0,200,83,0.35));
+    background-size: 200% 100%;
     transition: width 0.2s ease;
 }
 
-.album-item.downloading .download-progress-bar {
-    background: linear-gradient(90deg, rgba(0,200,83,0.6), rgba(0,200,83,0.18));
+.album-item.downloading .download-progress-container {
+    animation: download-stripes 1.2s linear infinite;
 }
 
 .album-header {
