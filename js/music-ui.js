@@ -1026,8 +1026,25 @@ document.addEventListener('visibilitychange', () => {
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
+        if (!event.data || !event.data.type) return;
+
         if (event.data.type === 'PLAYBACK_RESPONSE') {
             togglePlayPause(event.data.payload.shouldPlay).catch(() => { });
+        } else if (event.data.type === 'PLAY_NEXT_SONG') {
+            const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
+            const currentIndex = Number.isInteger(event.data.payload?.currentIndex)
+                ? event.data.payload.currentIndex
+                : currentSongIndex;
+
+            const nextIndex = getNextSongIndex(currentIndex);
+            if (songListSource && nextIndex >= 0 && nextIndex < songListSource.length) {
+                appendSong(nextIndex, true).catch(err => {
+                    showNotification('Không thể chuyển bài tự động: ' + err.message, 'error');
+                });
+            } else {
+                resetAudioState();
+                updateSongList();
+            }
         } else if (event.data.type === 'NAVIGATE') {
             window.location.href = event.data.payload;
         }
