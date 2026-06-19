@@ -8,13 +8,8 @@ let isRandom = false;
 let currentAlbumId = null;
 let playHistory = [];
 let playedIndices = [];
-let preloadAudio = null;
-let nextSongIndex = -1;
 let playingSongId = null;
 let activeBlobUrl = null;
-let preloadedBlobUrl = null;
-let isPreloadComplete = false;
-let preloadAbortController = null;
 
 function debounce(func, wait) {
     let timeout;
@@ -140,6 +135,7 @@ function togglePlayPause(shouldPlay) {
                 return;
             }
             audio.play().then(() => {
+                localStorage.setItem('autoPlayEnabled', 'true');
                 record.classList.add('on');
                 toneArm.classList.add('play');
                 playIcon.style.display = 'none';
@@ -170,68 +166,6 @@ function togglePlayPause(shouldPlay) {
             resolve();
         }
     });
-}
-
-async function preloadNextSong() {
-    const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
-    if (!songListSource || songListSource.length === 0) return;
-
-    nextSongIndex = getNextSongIndex(currentSongIndex);
-    if (nextSongIndex < 0 || nextSongIndex >= songListSource.length) return;
-
-    const song = songListSource[nextSongIndex];
-    const token = localStorage.getItem('auth_token');
-    const isOnline = navigator.onLine;
-    const isLoggedIn = !!token;
-
-    try {
-        if (preloadedBlobUrl) {
-            URL.revokeObjectURL(preloadedBlobUrl);
-            preloadedBlobUrl = null;
-        }
-        // Hủy lệnh fetch cũ nếu đang chạy
-        if (preloadAbortController) {
-            preloadAbortController.abort();
-            preloadAbortController = null;
-        }
-        isPreloadComplete = false;
-
-        let blobUrl = null;
-
-        if (song && song.songData instanceof Blob) {
-            // Có sẵn dữ liệu ngoại tuyến
-            blobUrl = URL.createObjectURL(song.songData);
-            preloadedBlobUrl = blobUrl;
-        } else {
-            if (!isOnline || !isLoggedIn) {
-                throw new Error('Bài hát không khả dụng ngoại tuyến');
-            }
-            if (!token) throw new Error('Không có mã xác thực');
-            const streamUrl = `${API_BASE_URL}/songs/${song.song_id}/stream?token=${token}`;
-            
-            // Tải ngầm file nhạc dưới dạng Blob (có thể hủy)
-            preloadAbortController = new AbortController();
-            const response = await fetch(streamUrl, { signal: preloadAbortController.signal });
-            if (!response.ok) throw new Error('Không thể tải bài hát từ server');
-            const blob = await response.blob();
-            blobUrl = URL.createObjectURL(blob);
-            preloadedBlobUrl = blobUrl;
-            preloadAbortController = null;
-        }
-
-        if (!preloadedBlobUrl) {
-            throw new Error('Nguồn âm thanh preload không hợp lệ');
-        }
-
-        isPreloadComplete = true;
-    } catch (error) {
-        if (preloadedBlobUrl) {
-            URL.revokeObjectURL(preloadedBlobUrl);
-            preloadedBlobUrl = null;
-        }
-        isPreloadComplete = false;
-        nextSongIndex = -1;
-    }
 }
 
 async function appendSong(index, autoPlay = false) {
@@ -283,37 +217,16 @@ async function appendSong(index, autoPlay = false) {
         if (timeStart) timeStart.textContent = '0:00';
         if (timeDuration) timeDuration.textContent = '0:00';
 
-        if (preloadedBlobUrl && nextSongIndex === index && isPreloadComplete) {
-            // Preload hoàn thành → phát từ Blob cục bộ (tối ưu cho tắt màn hình)
-            audio.src = preloadedBlobUrl;
-            activeBlobUrl = preloadedBlobUrl;
-            preloadedBlobUrl = null;
-            nextSongIndex = -1;
+        if (song && song.songData instanceof Blob) {
+            const localBlobUrl = URL.createObjectURL(song.songData);
+            audio.src = localBlobUrl;
+            activeBlobUrl = localBlobUrl;
+        } else if (!isOnline || !isLoggedIn) {
+            throw new Error('Bài hát không khả dụng ngoại tuyến: Thiếu hoặc dữ liệu không hợp lệ');
         } else {
-            // Hủy preload cũ nếu đang chạy dở
-            if (preloadAbortController) {
-                preloadAbortController.abort();
-                preloadAbortController = null;
-            }
-            if (preloadedBlobUrl) {
-                URL.revokeObjectURL(preloadedBlobUrl);
-                preloadedBlobUrl = null;
-            }
-            isPreloadComplete = false;
-            nextSongIndex = -1;
-
-            if (song && song.songData instanceof Blob) {
-                // Ưu tiên phát từ bản ngoại tuyến trong máy kể cả khi online
-                const localBlobUrl = URL.createObjectURL(song.songData);
-                audio.src = localBlobUrl;
-                activeBlobUrl = localBlobUrl;
-            } else if (!isOnline || !isLoggedIn) {
-                throw new Error('Bài hát không khả dụng ngoại tuyến: Thiếu hoặc dữ liệu không hợp lệ');
-            } else {
-                if (!token) throw new Error('Vui lòng đăng nhập.');
-                const streamUrl = `${API_BASE_URL}/songs/${song.song_id}/stream?token=${token}`;
-                audio.src = streamUrl;
-            }
+            if (!token) throw new Error('Vui lòng đăng nhập.');
+            const streamUrl = `${API_BASE_URL}/songs/${song.song_id}/stream?token=${token}`;
+            audio.src = streamUrl;
         }
 
         if (!audio.src)
@@ -388,8 +301,6 @@ async function appendSong(index, autoPlay = false) {
 
         updateSongList();
         preparingNotification.remove();
-
-        preloadNextSong();
     } catch (error) {
         preparingNotification.remove();
         showNotification(`Lỗi phát nhạc: ${error.message}. Thử chuyển sang bài ngoại tuyến...`, 'info');
@@ -433,19 +344,9 @@ function resetAudioState() {
     if (pauseIcon) pauseIcon.style.display = 'none';
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     updateSongList();
-    nextSongIndex = -1;
-    if (preloadAbortController) {
-        preloadAbortController.abort();
-        preloadAbortController = null;
-    }
-    isPreloadComplete = false;
     if (activeBlobUrl) {
         URL.revokeObjectURL(activeBlobUrl);
         activeBlobUrl = null;
-    }
-    if (preloadedBlobUrl) {
-        URL.revokeObjectURL(preloadedBlobUrl);
-        preloadedBlobUrl = null;
     }
 }
 

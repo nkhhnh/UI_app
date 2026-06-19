@@ -242,6 +242,7 @@ body {
 }
 
 .song-item {
+    position: relative;
     padding: 10px;
     margin-bottom: 10px;
     background-color: rgba(26, 26, 26, 0.3);
@@ -251,10 +252,29 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    overflow: hidden;
 }
 
 .song-item:hover {
     background-color: #f26d07;
+}
+
+.download-progress-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.download-progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(0,200,83,0.4), rgba(0,200,83,0.12));
+    transition: width 0.2s ease;
+}
+
+.song-item.downloading .download-progress-bar {
+    background: linear-gradient(90deg, rgba(0,200,83,0.6), rgba(0,200,83,0.18));
 }
 
 .song-item.playing {
@@ -679,6 +699,8 @@ body {
 }
 
 .album-item {
+    position: relative;
+    overflow: hidden;
     padding: 10px;
     margin-bottom: 10px;
     background-color: rgba(26, 26, 26, 0.3);
@@ -689,6 +711,24 @@ body {
 
 .album-item:hover {
     background-color: #f26d07;
+}
+
+.album-item .download-progress-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.album-item .download-progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(0,200,83,0.4), rgba(0,200,83,0.12));
+    transition: width 0.2s ease;
+}
+
+.album-item.downloading .download-progress-bar {
+    background: linear-gradient(90deg, rgba(0,200,83,0.6), rgba(0,200,83,0.18));
 }
 
 .album-header {

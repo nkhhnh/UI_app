@@ -133,7 +133,7 @@ async function loadAlbumSongs(albumId) {
     }
 }
 
-async function downloadSong(songId, songName) {
+async function downloadSong(songId, songName, progressCallback = null) {
     if (!navigator.onLine) {
         showNotification('Không thể tải bài hát khi ngoại tuyến.', 'error');
         return;
@@ -141,6 +141,7 @@ async function downloadSong(songId, songName) {
     try {
         const token = localStorage.getItem('auth_token');
         if (!token) throw new Error('Vui lòng đăng nhập.');
+
         const response = await fetch(`${API_BASE_URL}/songs/${songId}/download`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -151,7 +152,31 @@ async function downloadSong(songId, songName) {
         if (!response.ok) throw new Error(`Lỗi tải xuống: ${response.status}`);
         const contentType = response.headers.get('Content-Type');
         if (!contentType || !contentType.startsWith('audio/')) throw new Error('Định dạng âm thanh không hợp lệ');
-        const blob = await response.blob();
+
+        let blob;
+        if (response.body && progressCallback) {
+            const reader = response.body.getReader();
+            const contentLength = Number(response.headers.get('Content-Length')) || null;
+            const chunks = [];
+            let receivedLength = 0;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                receivedLength += value.length;
+                if (contentLength) {
+                    progressCallback(receivedLength / contentLength);
+                } else {
+                    progressCallback(null);
+                }
+            }
+
+            blob = new Blob(chunks, { type: contentType });
+        } else {
+            blob = await response.blob();
+        }
+
         if (blob.size === 0) throw new Error('Dữ liệu bài hát rỗng');
 
         if (!db) await initIndexedDB();
@@ -172,10 +197,11 @@ async function downloadSong(songId, songName) {
         showNotification(`Đã tải "${songName}" vào thiết bị`, 'success');
     } catch (error) {
         showNotification('Không thể tải bài hát: ' + error.message, 'error');
+        throw error;
     }
 }
 
-async function downloadAlbum(albumId, albumName) {
+async function downloadAlbum(albumId, albumName, progressCallback = null) {
     if (!navigator.onLine) {
         showNotification('Không thể tải album khi ngoại tuyến.', 'error');
         return;
@@ -188,8 +214,24 @@ async function downloadAlbum(albumId, albumName) {
         }
 
         const loadingNotification = showNotification(`Đang tải "${albumName}"...`, 'info');
+        const totalSongs = albumData.songs.length;
+        let completedSongs = 0;
+
         for (const song of albumData.songs) {
-            await downloadSong(song.song_id, song.custom_name);
+            await downloadSong(song.song_id, song.custom_name, (songPercent) => {
+                if (progressCallback) {
+                    if (songPercent === null) {
+                        progressCallback(null);
+                    } else {
+                        const albumPercent = (completedSongs + songPercent) / totalSongs;
+                        progressCallback(Math.min(1, albumPercent));
+                    }
+                }
+            });
+            completedSongs += 1;
+            if (progressCallback) {
+                progressCallback(Math.min(1, completedSongs / totalSongs));
+            }
         }
 
         const albumIndex = albums.findIndex(a => a.id === parseInt(albumId));
