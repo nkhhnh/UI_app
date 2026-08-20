@@ -55,9 +55,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return `${day}/${month}`;
     }
 
-    function updateCurrentWeather(data, pop) {
+    function updateCurrentWeather(data, pop, displayName) {
         content.classList.remove('hide');
-        city.innerText = data.name;
+        city.innerText = displayName || data.name;
         country.innerText = data.sys.country;
         let celsiusTemp = Math.round(data.main.temp);
         value.innerHTML = celsiusTemp + "<sup>o</sup>C";
@@ -171,30 +171,102 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function changeWeatherUI(locationSearch) {
-        if (!locationSearch) {
-            if (window.showNotification) showNotification('Vui lòng nhập tên thành phố!', 'info');
-            return;
-        }
+    // ===================================================================
+    // TIM KIEM DIA DIEM
+    // ===================================================================
+    // Truoc day ban thang chuoi nguoi dung go vao tham so q= cua endpoint
+    // /data/2.5/weather. Tham so do tra khop gan nhu chinh xac theo ten
+    // trong CSDL, nen "quận 1" ra ket qua con "quan 1" thi 404.
+    //
+    // Geocoding API (/geo/1.0/direct) khoan dung hon nhieu - do da kiem tra
+    // that: "quan 1", "go vap", "thu duc", "hai chau" khong dau deu ra dung.
+    // Nen gio dung no de doi ten -> toa do, roi goi thoi tiet bang lat/lon.
 
-        const searchQuery = encodeURIComponent(locationSearch.trim());
-        const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${searchQuery}&appid=${ApiKey1}&units=metric&lang=vi`;
-        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${searchQuery}&appid=${ApiKey2}&units=metric&lang=vi`;
+    const CITY_ALIASES = {
+        'hn': 'ha noi',
+        'sg': 'sai gon',
+        'tp hcm': 'ho chi minh',
+        'tp ho chi minh': 'ho chi minh',
+        'vt': 'vung tau',
+        'dl': 'da lat'
+    };
+
+    function normalizeQuery(input) {
+        let query = input.trim().replace(/\s+/g, ' ');
+
+        // "quan1" -> "quan 1", "q1" -> "q 1"
+        query = query.replace(/([a-zA-Z\u00C0-\u1EF9])(\d)/g, '$1 $2');
+
+        // "q 1", "q.1" -> "quan 1" (rieng "quan" khong bi dinh vi sau chu q
+        // la chu u chu khong phai so)
+        query = query.replace(/\bq\s*\.?\s*(\d{1,2})\b/gi, 'quan $1');
+
+        const key = removeDiacritics(query).toLowerCase();
+        return CITY_ALIASES[key] || query;
+    }
+
+    // Uu tien ket qua o Viet Nam neu co.
+    // Do thuc te: truy van tieng Viet luon co ban ghi VN trong danh sach
+    // (vi du "hai chau" tra ve CN, KP, CN, VN, VN - phai lay cai VN), con
+    // truy van nuoc ngoai (London, Paris, Tokyo, Berlin...) khong he co ban
+    // ghi VN nao, nen quy tac nay khong lam hong tim kiem quoc te.
+    function pickBestMatch(results) {
+        if (!Array.isArray(results) || results.length === 0) return null;
+        return results.find(item => item.country === 'VN') || results[0];
+    }
+
+    async function geocode(query) {
+        const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=5&appid=${ApiKey1}`;
+        const response = await fetch(url);
+        if (!response.ok) return [];
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+    }
+
+    async function resolveLocation(input) {
+        const normalized = normalizeQuery(input);
+        let best = pickBestMatch(await geocode(normalized));
+        if (best) return best;
+
+        // Chuan hoa co the doan sai y nguoi dung, thu lai nguyen van.
+        const raw = input.trim().replace(/\s+/g, ' ');
+        if (normalized !== raw) {
+            best = pickBestMatch(await geocode(raw));
+        }
+        return best;
+    }
+
+    async function changeWeatherUI(locationSearch) {
+        // Khong bao loi khi chuoi rong: ham nay cung duoc goi luc mo trang.
+        if (!locationSearch || !locationSearch.trim()) return;
 
         try {
-            apiCallCounter += 2;
+            apiCallCounter += 3;
             localStorage.setItem('apiCallCounter', apiCallCounter);
 
+            const place = await resolveLocation(locationSearch);
+
+            if (!place) {
+                content.classList.add('hide');
+                if (window.showNotification) {
+                    showNotification(`Không tìm thấy "${locationSearch}".`, 'error');
+                }
+                return;
+            }
+
+            const displayName = (place.local_names && place.local_names.vi) || place.name;
+            const coords = `lat=${place.lat}&lon=${place.lon}`;
+
             const [currentResponse, forecastResponse] = await Promise.all([
-                fetch(currentUrl),
-                fetch(forecastUrl)
+                fetch(`https://api.openweathermap.org/data/2.5/weather?${coords}&appid=${ApiKey1}&units=metric&lang=vi`),
+                fetch(`https://api.openweathermap.org/data/2.5/forecast?${coords}&appid=${ApiKey2}&units=metric&lang=vi`)
             ]);
             const currentData = await currentResponse.json();
             const forecastData = await forecastResponse.json();
 
-            if (currentData.cod !== 200) {
+            if (Number(currentData.cod) !== 200) {
                 content.classList.add('hide');
-                if (window.showNotification) showNotification('Thành phố không tồn tại!', 'error');
+                if (window.showNotification) showNotification('Không lấy được thời tiết của địa điểm này!', 'error');
                 return;
             }
 
@@ -205,8 +277,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const pop = forecastData.list[0]?.pop;
-            updateCurrentWeather(currentData, pop);
+            updateCurrentWeather(currentData, pop, displayName);
             updateForecast(forecastData);
+
+            localStorage.setItem('weather_last_search', locationSearch.trim());
         } catch (error) {
             content.classList.add('hide');
             for (let i = 1; i <= 5; i++) {
@@ -243,5 +317,11 @@ document.addEventListener('DOMContentLoaded', function () {
         clearInterval(window.timeInterval);
     });
 
-    changeWeatherUI('');
+    // Truoc day goi voi chuoi rong nen mo trang lan nao cung bat thong bao
+    // "Vui long nhap ten thanh pho!".
+    const lastSearch = localStorage.getItem('weather_last_search');
+    if (lastSearch) {
+        search.value = lastSearch;
+        changeWeatherUI(lastSearch);
+    }
 });
