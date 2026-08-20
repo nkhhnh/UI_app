@@ -81,6 +81,42 @@ async function loadAlbums() {
     }
 }
 
+/**
+ * Ghép bài hát của album với bản ghi trong danh sách chung, để lấy được
+ * songData (blob đã tải offline) nếu có.
+ */
+function mapAlbumSongsToGlobal(albumSongs) {
+    return albumSongs
+        .map(song => songs.find(s => String(s.song_id) === String(song.song_id)) || song)
+        .filter(song => song && song.song_id && song.custom_name);
+}
+
+/**
+ * Đối chiếu lại danh sách bài hát của album với máy chủ mà không chặn giao
+ * diện. Chỉ vẽ lại khi thực sự có thay đổi, và bỏ qua nếu người dùng đã
+ * chuyển sang album khác trong lúc chờ.
+ */
+async function refreshAlbumSongsInBackground(albumId) {
+    try {
+        const fresh = await fetchAPI(`/albums/${albumId}`);
+        if (!fresh || !Array.isArray(fresh.songs)) return;
+        if (String(currentAlbumId) !== String(albumId)) return;
+
+        const albumIndex = albums.findIndex(a => String(a.id) === String(albumId));
+        if (albumIndex !== -1) albums[albumIndex].songs = fresh.songs;
+
+        const freshIds = fresh.songs.map(s => String(s.song_id)).join(',');
+        const shownIds = currentAlbumPlaylist.map(s => String(s.song_id)).join(',');
+        if (freshIds === shownIds) return;
+
+        currentAlbumPlaylist = mapAlbumSongsToGlobal(fresh.songs);
+        updateSongList();
+        displayAlbumsList();
+    } catch (error) {
+        // Không đối chiếu được thì giữ nguyên bản đang hiển thị.
+    }
+}
+
 async function loadAlbumSongs(albumId) {
     try {
         if (!db) await initIndexedDB();
@@ -105,17 +141,24 @@ async function loadAlbumSongs(albumId) {
                 throw new Error('Không có bài hát ngoại tuyến nào trong album này');
             }
         } else {
-            albumData = await fetchAPI(`/albums/${albumId}`);
+            // /albums giờ đã trả về kèm bài hát, nên mở một album không cần
+            // gọi mạng nữa - đây là chỗ trước đây phải chờ cả một vòng request
+            // tới Render (cộng thêm thời gian server thức dậy nếu đang ngủ).
+            const cached = albums.find(a => String(a.id) === String(albumId));
+
+            albumData = (cached && Array.isArray(cached.songs))
+                ? cached
+                : await fetchAPI(`/albums/${albumId}`);
+
             if (!albumData || !Array.isArray(albumData.songs)) {
                 throw new Error('Dữ liệu album không hợp lệ');
             }
-            currentAlbumPlaylist = albumData.songs
-                .map(song => {
-                    const songInGlobal = songs.find(s => s.song_id === song.song_id);
-                    return songInGlobal || song;
-                })
-                .filter(song => song && song.song_id && song.custom_name);
+            currentAlbumPlaylist = mapAlbumSongsToGlobal(albumData.songs);
             currentAlbumId = albumId;
+
+            // Dữ liệu trong bộ nhớ có thể đã cũ nếu album được sửa ở nơi khác.
+            // Hiện ngay bản đang có rồi âm thầm đối chiếu lại với máy chủ.
+            if (cached) refreshAlbumSongsInBackground(albumId);
         }
 
         updateSongList();
@@ -130,6 +173,30 @@ async function loadAlbumSongs(albumId) {
         updateSongList();
         if (playlistTitle) playlistTitle.textContent = 'Danh sách phát';
         showNotification(`Không thể tải bài hát của album: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Tính SHA-256 của file ngay trên trình duyệt, trả về chuỗi hex thường.
+ *
+ * Dùng để hỏi máy chủ "file này có sẵn chưa?" TRƯỚC khi tải lên. Máy chủ vốn
+ * đã chống trùng bằng hash, nhưng chỉ phát hiện được sau khi đã nhận xong
+ * toàn bộ file - tức là đã tốn hết băng thông rồi mới biết là thừa.
+ *
+ * Trả về null nếu không tính được (crypto.subtle chỉ tồn tại trong secure
+ * context - https hoặc localhost). Khi đó luồng tải lên chạy như bình thường.
+ */
+async function computeFileHash(file) {
+    if (!window.crypto || !window.crypto.subtle || !file) return null;
+
+    try {
+        const buffer = await file.arrayBuffer();
+        const digest = await window.crypto.subtle.digest('SHA-256', buffer);
+        return Array.from(new Uint8Array(digest))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+    } catch (error) {
+        return null;
     }
 }
 

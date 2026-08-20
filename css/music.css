@@ -1,3 +1,9 @@
+:root {
+    /* Khoa bang mau sang: chan Auto Dark Theme cua Chrome Android va che do
+       toi tu dong cua Samsung Internet ve lai mau cua trang. */
+    color-scheme: only light;
+}
+
 * {
     padding: 0;
     margin: 0;
@@ -1186,5 +1192,138 @@ nav.open .nav-content span {
     .music-control__progress-time-start,
     .music-control__progress-time-duration {
         font-size: 10px;
+    }
+}
+/* ==========================================================================
+   VỪA KHÍT MÀN HÌNH ĐIỆN THOẠI
+   Chỉ chỉnh TỈ LỆ và VÙNG AN TOÀN. Không đổi bố cục, không đổi thứ tự,
+   không đổi điểm neo của bất kỳ thành phần nào.
+   ========================================================================== */
+
+/* --- 1. Máy quay đĩa -------------------------------------------------------
+   .player là khung cố định 330x190px, và MỌI thành phần con (đĩa, kim, nút,
+   thanh âm lượng) được đặt bằng toạ độ px tuyệt đối bên trong khung đó.
+   Hệ quả: nó hiển thị y hệt nhau trên máy 320px và máy 430px - đúng triệu
+   chứng "không vừa với tỉ lệ màn hình".
+   Cách giữ nguyên 100% bố cục mà vẫn vừa mọi màn hình là phóng nguyên khối
+   bằng scale(), thay vì sửa toạ độ từng thành phần con (sẽ vỡ hình).       */
+.player {
+    --player-scale: 1;
+    transform: translate(-50%, -50%) scale(var(--player-scale));
+    transform-origin: center center;
+}
+
+/* CSS không chia được length cho length, nên hệ số scale không thể tính bằng
+   công thức (100vw / 330px). Dùng thang breakpoint theo các bề rộng máy phổ
+   biến - giá trị rời rạc nhưng hợp lệ trên mọi trình duyệt.
+   Mốc quy chiếu: khung gốc rộng 330px. */
+@media (max-width: 870px) {
+    .player { --player-scale: 1.32; }   /* máy lớn / tablet dọc */
+}
+
+@media (max-width: 600px) {
+    .player { --player-scale: 1.22; }   /* Pixel, Galaxy S2x (412-480px) */
+}
+
+@media (max-width: 411px) {
+    .player { --player-scale: 1.12; }   /* iPhone 12/13/14/15 (390-411px) */
+}
+
+@media (max-width: 389px) {
+    .player { --player-scale: 1; }      /* Android phổ thông (360-389px) */
+}
+
+@media (max-width: 359px) {
+    .player { --player-scale: 0.93; }   /* Galaxy S8 và máy hẹp (330-359px) */
+}
+
+@media (max-width: 329px) {
+    .player { --player-scale: 0.84; }   /* iPhone SE đời đầu (320px) */
+}
+
+/* Ràng buộc theo chiều cao: đặt SAU thang bề rộng để luôn thắng khi màn hình
+   thấp, tránh đĩa đè lên thanh điều khiển ở đáy. */
+@media (max-height: 620px) {
+    .player { --player-scale: 0.9; }
+}
+
+@media (max-height: 520px) {
+    .player { --player-scale: 0.78; }
+}
+
+@media (max-height: 430px) {
+    .player { --player-scale: 0.66; }
+}
+
+/* --- 2. Thanh điều khiển dưới đáy ------------------------------------------
+   Các trang đều đặt viewport-fit=cover nhưng chưa nơi nào dùng safe-area.
+   Trên iPhone có notch và máy Android dùng cử chỉ vuốt, thanh điều khiển
+   nằm lọt dưới thanh Home nên bị che mất một phần.                         */
+.main-music-control {
+    box-sizing: border-box;
+    height: calc(90px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+
+@media (max-width: 870px) {
+    .main-music-control {
+        height: calc(120px + env(safe-area-inset-bottom, 0px));
+        padding-left: max(10px, env(safe-area-inset-left, 0px));
+        padding-right: max(10px, env(safe-area-inset-right, 0px));
+    }
+
+    /* Nút phát/tới/lui neo theo đáy màn hình nên cũng cần tránh vùng Home. */
+    .music-control__center-action {
+        bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+@media (max-width: 480px) {
+    .main-music-control {
+        height: calc(140px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* --- 3. Các bảng nổi (playlist / albums / tuỳ chọn) ------------------------
+   Giữ nguyên điểm neo bên phải (chúng bám theo nút menu ở góc phải, nên neo
+   theo px từ mép phải là đúng). Chỉ cho bề rộng co giãn để không tràn khỏi
+   mép trái trên máy hẹp và không bỏ phí chỗ trên máy rộng.                 */
+@media (max-width: 870px) {
+    .playlist,
+    .albums-list {
+        width: clamp(160px, calc(100vw - 130px), 280px);
+        padding: clamp(10px, 3vw, 20px);
+        box-sizing: border-box;
+        max-height: min(50vh, calc(100dvh - 220px));
+    }
+
+    .albums-list {
+        max-height: min(70vh, calc(100dvh - 160px));
+    }
+
+    /* left:200px cố định sẽ tràn ra ngoài trên máy hẹp hơn 315px. */
+    .options-popup {
+        left: min(200px, calc(100vw - 115px));
+    }
+}
+
+/* --- 4. Xoay ngang / màn hình rất thấp -------------------------------------
+   Thu gọn thanh điều khiển để máy quay đĩa còn chỗ hiển thị.               */
+@media (max-height: 480px) and (orientation: landscape) {
+    .main-music-control {
+        height: calc(86px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .music-control__center-action {
+        bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        gap: 14px;
+    }
+
+    .playlist,
+    .albums-list {
+        top: 60px;
+        max-height: calc(100dvh - 150px);
     }
 }

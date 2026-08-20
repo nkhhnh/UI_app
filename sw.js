@@ -1,4 +1,4 @@
-const CACHE_NAME = 'music-app-cache-v11';
+const CACHE_NAME = 'music-app-cache-v15';
 const STATIC_ASSETS = [
   '/html/index.html',
   '/html/contact.html',
@@ -74,33 +74,38 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
+  const req = event.request;
 
-  if (url.pathname.startsWith('/api')) {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(JSON.stringify({ error: 'Offline: API unavailable' }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      })
-    );
-    return;
-  }
+  // Chỉ xử lý GET, các method khác để trình duyệt tự lo
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+
+  // ===== QUAN TRỌNG: KHÔNG can thiệp vào request nhạc / API =====
+  // Nếu Service Worker proxy stream audio thì:
+  //  - Response trở thành "opaque" -> trình duyệt mất khả năng tự gửi lại Range
+  //    request để buffer tiếp / seek.
+  //  - Service Worker bị hệ điều hành kill sau ~30s idle khi tắt màn hình ->
+  //    kết nối stream đang chạy bị hủy -> nhạc đứng hẳn.
+  // Bỏ qua respondWith() để trình duyệt xử lý native, nhạc chạy nền ổn định.
+  if (url.origin !== self.location.origin) return;              // API + stream (khác origin)
+  if (req.destination === 'audio' || req.destination === 'video') return;
+  if (req.headers.has('range')) return;                          // request có Range
+  if (url.pathname.startsWith('/api')) return;                   // phòng khi deploy chung origin
 
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request).then(fetchResponse => {
+    caches.match(req).then(response => {
+      return response || fetch(req).then(fetchResponse => {
         if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
           return fetchResponse;
         }
         const responseToCache = fetchResponse.clone();
         caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseToCache);
+          cache.put(req, responseToCache);
         });
         return fetchResponse;
       }).catch(() => {
-        if (event.request.mode === 'navigate') {
+        if (req.mode === 'navigate') {
           return caches.match('/html/index.html');
         }
         return new Response('Offline: Network error', { status: 404 });
@@ -110,49 +115,44 @@ self.addEventListener('fetch', event => {
 });
 
 self.addEventListener('message', event => {
+  const data = event.data;
+  if (!data || !data.type) return;
 
-  if (event.data && event.data.type === 'UPDATE_MEDIA_METADATA') {
-    const { title, artist, isPlaying } = event.data.payload;
-    if ('mediaSession' in self) {
-      self.mediaSession.metadata = new MediaMetadata({
-        title: title,
-        artist: artist,
-        artwork: [
-          { src: '/image/192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/image/512x512.png', sizes: '512x512', type: 'image/png' }
-        ]
-      });
-      self.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-    }
-  } else if (event.data && event.data.type === 'PLAYBACK_REQUEST') {
+  if (data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+
+  // Lưu ý: mediaSession KHÔNG tồn tại trong Service Worker.
+  // Metadata phải được set từ trang (navigator.mediaSession) - xem music-player.js.
+  if (data.type === 'PLAYBACK_REQUEST') {
     event.waitUntil(
       self.clients.matchAll().then(clients => {
         clients.forEach(client => {
           client.postMessage({
             type: 'PLAYBACK_RESPONSE',
-            payload: { shouldPlay: event.data.payload.shouldPlay }
+            payload: { shouldPlay: data.payload.shouldPlay }
           });
         });
       })
     );
-  } else if (event.data && event.data.type === 'SONG_ENDED') {
+  } else if (data.type === 'SONG_ENDED') {
     event.waitUntil(
-      self.clients.matchAll().then(clients => {
+      self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
         if (clients.length === 0) {
-          self.registration.showNotification('Music App', {
+          return self.registration.showNotification('Music App', {
             body: 'Bài hát đã kết thúc. Mở ứng dụng để tiếp tục.',
             icon: '/image/192x192.png'
           });
-          return;
         }
         clients.forEach(client => {
           client.postMessage({
             type: 'PLAY_NEXT_SONG',
             payload: {
-              currentIndex: event.data.payload.currentIndex,
-              isLoopSingle: event.data.payload.isLoopSingle,
-              isRandom: event.data.payload.isRandom,
-              playedIndices: event.data.payload.playedIndices || []
+              currentIndex: data.payload.currentIndex,
+              isLoopSingle: data.payload.isLoopSingle,
+              isRandom: data.payload.isRandom,
+              playedIndices: data.payload.playedIndices || []
             }
           });
         });
@@ -178,7 +178,7 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(
-    self.clients.matchAll().then(clients => {
+    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
       const client = clients.find(c => c.visibilityState === 'visible');
       if (client) {
         client.focus();

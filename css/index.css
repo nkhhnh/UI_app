@@ -282,3 +282,29 @@ a {
         font-size: clamp(0.375rem, 1vw, 0.5rem);
     }
 }
+/* ==========================================================================
+   VỪA KHÍT MÀN HÌNH ĐIỆN THOẠI - TRANG CHỦ (tiêu đề & vùng an toàn)
+   ========================================================================== */
+
+@media (max-width: 900px) {
+    /* h1 đang cố định 40px kèm lề 30px/20px ở mọi kích thước màn hình.
+       Trên máy nhỏ khối này chiếm gần 90px chiều cao, đẩy thẻ ảnh cuối
+       xuống dưới mép màn hình - mà body đang overflow:hidden nên phần bị
+       đẩy ra sẽ mất hẳn, không cuộn tới được. */
+    h1 {
+        font-size: clamp(1.375rem, 6.5vw, 2.5rem);
+        margin: clamp(0.5rem, 2.2vh, 1.875rem) 0 clamp(0.375rem, 1.5vh, 1.25rem) 0;
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+}
+
+/* Lưới đã tự chia chỗ nên nội dung vừa khít, nhưng vẫn để ngỏ đường cuộn
+   làm lưới an toàn: body đang overflow:hidden, nếu có máy nào lệch vài pixel
+   thì phần tràn ra sẽ mất hẳn và người dùng không chạm tới được.
+   Nội dung vừa màn hình thì overflow-y:auto không hiện thanh cuộn. */
+@media (max-width: 900px), (max-height: 560px) {
+    body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}

@@ -89,7 +89,9 @@
         width: auto;
         border-radius: clamp(0.25rem, 0.5vw, 0.75rem);
         filter: grayscale(0%);
-        aspect-ratio: 16/9;
+        /* Anh mobile (music2 / weather2 / contact2) deu la 1536x1024 = 3/2.
+           Truoc day ep 16/9 nen anh bi keo gian ngang. */
+        aspect-ratio: 3/2;
     }
     .edge-text {
         font-size: clamp(0.75rem, 2.5vw, 0.875rem);
@@ -118,5 +120,241 @@
             gap: clamp(0.5rem, 10vw / (4 + 1), 2rem); /* Tăng tối đa lên 2rem */
             padding: clamp(0.5rem, 4vw, 1.5rem); /* Tăng padding tối đa lên 1.5rem */
         }
+    }
+}
+/* ==========================================================================
+   VỪA KHÍT MÀN HÌNH ĐIỆN THOẠI - TRANG CHỦ
+   Giữ nguyên bố cục: chữ trên - ảnh - chữ dưới, ba thẻ xếp dọc.
+   ==========================================================================
+
+   Cách cũ (height: clamp(..., (100dvh - 250px) / 3, ...)) không đúng được:
+   phần "không phải ảnh" - tiêu đề, 6 dòng chữ viền, khoảng cách - cũng tính
+   theo vh nên nó co giãn theo máy, thực đo dao động 250px đến 326px chứ
+   không cố định 250px. Trừ đi một hằng số thì máy nào cũng lệch.
+
+   Nên bỏ hẳn việc tính tay: cho lưới sở hữu phần chiều cao còn lại và chia
+   đều 3 hàng, ảnh lấp đầy chỗ trống trong hàng của nó. Chữ chiếm bao nhiêu
+   thì ảnh tự co lại bấy nhiêu - đúng với mọi tỉ lệ màn hình, không cần
+   đoán con số nào.                                                        */
+
+@media (max-width: 900px) {
+    body {
+        height: 100vh;
+        height: 100dvh;
+    }
+
+    .page-content {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+    }
+
+    .content-wrapper {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+    }
+
+    .home_list_image {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        grid-template-rows: repeat(3, 1fr);
+        /* clamp(0.25rem, 5vw / (4 + 1), 1rem) rút gọn lại là 1vw, luôn nhỏ
+           hơn mức tối thiểu 0.25rem, nên khoảng cách lúc nào cũng đúng 4px. */
+        gap: clamp(0.25rem, 1.2vh, 0.75rem);
+        padding: clamp(0.25rem, 2vw, 0.75rem);
+        padding-left: max(clamp(0.25rem, 2vw, 0.75rem), env(safe-area-inset-left, 0px));
+        padding-right: max(clamp(0.25rem, 2vw, 0.75rem), env(safe-area-inset-right, 0px));
+        padding-bottom: max(clamp(0.25rem, 2vw, 0.75rem), env(safe-area-inset-bottom, 0px));
+        box-sizing: border-box;
+    }
+
+    .home_list_item {
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* align-items mặc định là center sẽ khiến khối ảnh không giãn hết hàng. */
+    .home_list_redirect {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        align-items: stretch;
+    }
+
+    .container_img {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Thẻ <a> đang là display:block rộng 100% (luật `a` trong index.css),
+       nên ảnh bên trong sẽ dạt về mép trái. Cho nó thành flex để ảnh nằm
+       đúng giữa như bố cục gốc. */
+    .home_img_mb {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .home_list_image img {
+        height: 100%;
+        width: auto;
+        max-width: 100%;
+        /* contain: luôn hiện trọn vẹn ảnh, không cắt xén. */
+        object-fit: contain;
+    }
+
+    /* margin 14px cố định ở cả 4 phía, sáu dòng cộng lại chiếm hơn 160px
+       chiều cao - phần đó lấy mất chỗ của ảnh. */
+    .edge-text {
+        margin: clamp(2px, 0.6vh, 10px);
+        line-height: 1.2;
+    }
+}
+
+/* Xoay ngang: chiều cao rất hẹp, thu nhỏ chữ để ảnh còn chỗ thở. */
+@media (max-height: 500px) and (orientation: landscape) {
+    .edge-text {
+        margin: 2px;
+        font-size: clamp(0.5rem, 1.8vh, 0.75rem);
+    }
+}
+
+/* ==========================================================================
+   NHÃN NỔI ĐÈ LÊN ẢNH (chỉ mobile)
+   Bỏ hai dòng chữ ngoài luồng, đưa tên mục thành chip đặt lên ảnh.
+   Trả lại toàn bộ ~160px chiều cao của 6 dòng chữ cho ảnh.
+   Desktop (>900px) giữ nguyên khung 4 chữ như thiết kế gốc.
+   ========================================================================== */
+
+@media (max-width: 900px) {
+    .home_list_item {
+        position: relative;
+    }
+
+    /* Chữ phía trên (ÂM NHẠC / LIÊN HỆ / THỜI TIẾT) -> chip nổi.
+       position:absolute nên nó rời khỏi luồng, phần chiều cao nó từng
+       chiếm sẽ tự động thuộc về ảnh. Căn giữa theo chiều ngang để luôn
+       nằm trên ảnh, vì ảnh cũng căn giữa. */
+    .home_list_item > .edge-text:first-of-type {
+        position: absolute;
+        left: 50%;
+        bottom: clamp(6px, 1.4vh, 16px);
+        transform: translateX(-50%);
+        z-index: 3;
+        margin: 0;
+        opacity: 1;
+        color: #fff;
+        background: rgba(24, 14, 10, 0.6);
+        padding: clamp(3px, 0.6vh, 7px) clamp(9px, 3.2vw, 16px);
+        border-radius: 999px;
+        font-size: clamp(0.68rem, 2.7vw, 0.9rem);
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+        pointer-events: none;
+    }
+
+    /* Chữ phía dưới (CẢM XÚC / NHẮN TIN / DỰ BÁO) - bỏ trên mobile. */
+    .home_list_item > .edge-text:last-of-type {
+        display: none;
+    }
+
+    /* Ảnh giờ lấp gần hết ô, nới khoảng cách giữa các thẻ cho dễ thở. */
+    .home_list_image {
+        gap: clamp(0.5rem, 2vh, 1.125rem);
+    }
+
+    /* Bo góc 4-6px hợp với ảnh nhỏ, nhưng ảnh giờ to gần hết bề ngang nên
+       bo mạnh hơn cho cân với chip bo tròn. */
+    .home_list_image img {
+        border-radius: clamp(8px, 2.5vw, 18px);
+    }
+}
+
+/* Xoay ngang: chip nhỏ lại cho cân với ảnh thấp. */
+@media (max-height: 500px) and (orientation: landscape) {
+    .home_list_item > .edge-text:first-of-type {
+        bottom: 4px;
+        padding: 2px 8px;
+        font-size: clamp(0.55rem, 2.2vh, 0.7rem);
+    }
+}
+
+/* ==========================================================================
+   KÍCH THƯỚC ẢNH
+   ==========================================================================
+
+   Trước đây ảnh lấp đầy ô hàng, mà ba hàng lại chia đều toàn bộ chiều cao
+   màn hình -> ba tấm chiếm ~87% chiều cao, kín gần hết trang.
+
+   Giờ ảnh có trần chiều cao riêng (--img-h), hàng co lại vừa đúng ảnh, và
+   cả cụm ba thẻ được căn giữa theo chiều dọc. Ba tấm chiếm khoảng 66% chiều
+   cao, nền còn thở được ở trên, dưới và hai bên.
+
+   Muốn ảnh to/nhỏ hơn thì chỉ cần sửa đúng một chỗ: giá trị 22vh bên dưới
+   (tăng lên 26vh là to hơn, giảm còn 18vh là nhỏ hơn).                     */
+
+@media (max-width: 900px) {
+    .home_list_image {
+        --grid-pad: clamp(0.25rem, 2vw, 0.75rem);
+        --img-h: clamp(120px, 22vh, 200px);
+
+        padding: 0 var(--grid-pad);
+        padding-left: max(var(--grid-pad), env(safe-area-inset-left, 0px));
+        padding-right: max(var(--grid-pad), env(safe-area-inset-right, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+
+        /* Hàng co vừa đúng ảnh thay vì chia đều màn hình. */
+        grid-template-rows: repeat(3, auto);
+
+        /* Chia đều khoảng trống thành 4 phần bằng nhau: trên ảnh 1, giữa
+           1-2, giữa 2-3, dưới ảnh 3.
+           row-gap phải bằng 0, vì grid cộng gap LÊN TRÊN phần space-evenly
+           chia ra - để nguyên gap thì khe giữa các ảnh sẽ dày hơn khe trên
+           và dưới đúng bằng giá trị gap. */
+        row-gap: 0;
+        align-content: space-evenly;
+    }
+
+    /* Để space-evenly quyết định luôn khoảng cách từ tiêu đề xuống ảnh đầu,
+       nếu không nó sẽ dày hơn ba khe còn lại đúng bằng margin này. */
+    h1 {
+        margin-bottom: 0;
+    }
+
+    /* Hàng đã co vừa ảnh, khoảng cách giữa các thẻ do gap của lưới lo.
+       Còn giữ margin dọc ở đây thì ô cao hơn ảnh vài pixel, chip nhãn bị
+       đẩy sát mép dưới ảnh. */
+    .home_list_redirect {
+        margin: 0;
+    }
+
+    .home_list_image img {
+        /* Chặn thêm theo bề rộng: ảnh tỉ lệ 3/2 nên chiều cao không được
+           vượt (bề rộng ô / 1.5), nếu không sẽ sinh viền trống hai bên. */
+        height: min(var(--img-h),
+                    calc((100vw
+                          - 2 * var(--grid-pad)
+                          - env(safe-area-inset-left, 0px)
+                          - env(safe-area-inset-right, 0px)) / 1.5));
+        max-height: none;
+        width: auto;
+        max-width: 100%;
+    }
+}
+
+/* Xoay ngang: chiều cao rất hẹp nên hạ trần ảnh xuống, không dùng 22vh. */
+@media (max-height: 500px) and (orientation: landscape) {
+    .home_list_image {
+        --img-h: clamp(64px, 24vh, 130px);
     }
 }

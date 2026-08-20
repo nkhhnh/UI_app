@@ -11,6 +11,19 @@ let playedIndices = [];
 let playingSongId = null;
 let activeBlobUrl = null;
 
+// ===== Trạng thái phục vụ phát nền / tự phục hồi khi tắt màn hình =====
+let currentSourceUrl = null;      // URL đang phát (blob: hoặc stream)
+let currentSourceIsStream = false; // true nếu đang stream qua mạng
+let audioLoadToken = 0;            // chống event của lần load cũ ghi đè lần mới
+let lastKnownTime = 0;             // vị trí phát gần nhất, dùng để resume
+let resumeAttempts = 0;
+let resumeTimer = null;
+let watchdogTimer = null;
+let watchdogLastTime = -1;
+let watchdogStuckSince = 0;
+let isResuming = false;
+const MAX_RESUME_ATTEMPTS = 10;
+
 function debounce(func, wait) {
     let timeout;
     return function (...args) {
@@ -168,7 +181,7 @@ function togglePlayPause(shouldPlay) {
     });
 }
 
-async function appendSong(index, autoPlay = false) {
+async function appendSong(index, autoPlay = false, retryCount = 0) {
     if (isLoadingSong) return;
     const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
     if (!songListSource || songListSource.length === 0 || index < 0 || index >= songListSource.length) {
@@ -199,9 +212,16 @@ async function appendSong(index, autoPlay = false) {
             activeBlobUrl = null;
         }
 
+        audioLoadToken++;
+        clearResumeTimer();
+        resumeAttempts = 0;
+        lastKnownTime = 0;
+        watchdogLastTime = -1;
+        watchdogStuckSince = 0;
+        // Không gán audio.src = '' rồi load(): thao tác này bắn ra sự kiện 'error'
+        // giả (Empty src) làm handler lỗi reset trạng thái, đồng thời tạo khoảng
+        // lặng dài khiến trình duyệt đóng media session khi màn hình đang tắt.
         audio.pause();
-        audio.src = '';
-        audio.load();
         isPlaying = false;
         if (playIcon) playIcon.style.display = 'block';
         if (pauseIcon) pauseIcon.style.display = 'none';
@@ -219,14 +239,22 @@ async function appendSong(index, autoPlay = false) {
 
         if (song && song.songData instanceof Blob) {
             const localBlobUrl = URL.createObjectURL(song.songData);
+            audio.preload = 'auto';
             audio.src = localBlobUrl;
             activeBlobUrl = localBlobUrl;
+            currentSourceUrl = localBlobUrl;
+            currentSourceIsStream = false;
         } else if (!isOnline || !isLoggedIn) {
             throw new Error('Bài hát không khả dụng ngoại tuyến: Thiếu hoặc dữ liệu không hợp lệ');
         } else {
             if (!token) throw new Error('Vui lòng đăng nhập.');
             const streamUrl = `${API_BASE_URL}/songs/${song.song_id}/stream?token=${token}`;
+            // preload='auto' để trình duyệt buffer sẵn nhiều nhất có thể,
+            // giảm khả năng đứt tiếng khi màn hình tắt và mạng chập chờn.
+            audio.preload = 'auto';
             audio.src = streamUrl;
+            currentSourceUrl = streamUrl;
+            currentSourceIsStream = true;
         }
 
         if (!audio.src)
@@ -237,53 +265,54 @@ async function appendSong(index, autoPlay = false) {
         playingSongId = song.song_id;
 
         if ('mediaSession' in navigator) {
-            const artworkIsOnline = navigator.onLine;
-            const artwork = artworkIsOnline ? [
-                { src: '/image/192x192.png', sizes: '192x192', type: 'image/png' },
-                { src: '/image/512x512.png', sizes: '512x512', type: 'image/png' }
-            ] : [];
-
+            // Ảnh đã nằm trong cache của Service Worker nên luôn set được,
+            // kể cả offline. MediaSession có metadata đầy đủ giúp Android giữ
+            // thông báo phát nhạc sống khi màn hình tắt.
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: song.custom_name || 'Không xác định',
                 artist: song.custom_artist || 'Không xác định',
-                artwork: artwork
+                album: 'Key In Cloud Music',
+                artwork: [
+                    { src: '/image/192x192.png', sizes: '192x192', type: 'image/png' },
+                    { src: '/image/512x512.png', sizes: '512x512', type: 'image/png' }
+                ]
             });
             navigator.mediaSession.playbackState = 'paused';
         }
 
-        await new Promise((resolve, reject) => {
-            audio.addEventListener('loadedmetadata', () => {
-                if (progress) {
-                    progress.max = audio.duration || 100;
-                    progress.value = 0;
-                    progress.style.setProperty('--progress-value', '0%');
-                }
-                if (timeDuration) timeDuration.textContent = formatTime(audio.duration || 0);
-                if (timeStart) timeStart.textContent = '0:00';
-                resolve();
-            }, { once: true });
-            audio.addEventListener('error', (e) => {
-                reject(new Error('Không thể tải metadata'));
-            }, { once: true });
-        });
-
-        await new Promise((resolve, reject) => {
-            audio.addEventListener('canplay', () => {
-                resolve();
-            }, { once: true });
-            audio.addEventListener('error', (e) => {
-                reject(new Error('Không thể tải âm thanh'));
-            }, { once: true });
-        });
-
-        const revokeBlob = () => {
-            if (activeBlobUrl) {
-                URL.revokeObjectURL(activeBlobUrl);
-                activeBlobUrl = null;
-            }
+        // Chờ có timeout: server Render có thể "ngủ" và mất hàng chục giây để
+        // thức dậy. Không có timeout thì lúc màn hình tắt promise treo vĩnh viễn,
+        // isLoadingSong kẹt ở true và cơ chế tự phục hồi không chạy được nữa.
+        const waitForAudioEvent = (eventName, timeoutMs, errorMessage) => {
+            return new Promise((resolve, reject) => {
+                const cleanup = () => {
+                    clearTimeout(timeoutId);
+                    audio.removeEventListener(eventName, onSuccess);
+                    audio.removeEventListener('error', onError);
+                };
+                const onSuccess = () => { cleanup(); resolve(); };
+                const onError = () => { cleanup(); reject(new Error(errorMessage)); };
+                const timeoutId = setTimeout(() => { cleanup(); reject(new Error(errorMessage + ' (quá thời gian chờ)')); }, timeoutMs);
+                audio.addEventListener(eventName, onSuccess);
+                audio.addEventListener('error', onError);
+            });
         };
-        audio.addEventListener('ended', revokeBlob, { once: true });
-        audio.addEventListener('error', revokeBlob, { once: true });
+
+        await waitForAudioEvent('loadedmetadata', 60000, 'Không thể tải metadata');
+        if (progress) {
+            progress.max = audio.duration || 100;
+            progress.value = 0;
+            progress.style.setProperty('--progress-value', '0%');
+        }
+        if (timeDuration) timeDuration.textContent = formatTime(audio.duration || 0);
+        if (timeStart) timeStart.textContent = '0:00';
+        updatePositionState();
+
+        await waitForAudioEvent('canplay', 60000, 'Không thể tải âm thanh');
+
+        // Không revoke blob theo sự kiện 'ended'/'error' nữa: một lỗi tạm thời
+        // sẽ hủy luôn nguồn phát và cơ chế tự phục hồi không nạp lại được.
+        // Blob cũ đã được thu hồi ở đầu appendSong và trong resetAudioState.
 
         if (autoPlay) {
             const autoplayConsent = document.getElementById('autoplay-consent');
@@ -303,13 +332,31 @@ async function appendSong(index, autoPlay = false) {
         preparingNotification.remove();
     } catch (error) {
         preparingNotification.remove();
-        showNotification(`Lỗi phát nhạc: ${error.message}. Thử chuyển sang bài ngoại tuyến...`, 'info');
-        
+
+        // Đang stream mà lỗi thường chỉ là mạng chập chờn hoặc server Render vừa
+        // thức dậy. Thử lại chính bài đó vài lần trước khi nhảy sang bài offline,
+        // để lúc màn hình tắt nhạc không tự đổi bài.
+        if (currentSourceIsStream && navigator.onLine && retryCount < 2) {
+            if (document.visibilityState === 'visible') {
+                showNotification('Kết nối chập chờn, đang thử lại...', 'info');
+            }
+            setTimeout(() => {
+                appendSong(index, autoPlay, retryCount + 1).catch(() => { });
+            }, 3000);
+            return;
+        }
+
+        if (document.visibilityState === 'visible') {
+            showNotification(`Lỗi phát nhạc: ${error.message}. Thử chuyển sang bài ngoại tuyến...`, 'info');
+        }
+
         const nextOfflineIndex = getNextOfflineSongIndex(index);
         if (nextOfflineIndex !== -1 && nextOfflineIndex !== index) {
             setTimeout(() => {
                 appendSong(nextOfflineIndex, autoPlay).catch(err => {
-                    showNotification(`Không thể phát bài ngoại tuyến tiếp theo: ${err.message}`, 'error');
+                    if (document.visibilityState === 'visible') {
+                        showNotification(`Không thể phát bài ngoại tuyến tiếp theo: ${err.message}`, 'error');
+                    }
                     resetAudioState();
                     updateSongList();
                 });
@@ -325,7 +372,15 @@ async function appendSong(index, autoPlay = false) {
 }
 
 function resetAudioState() {
-    audio.src = '';
+    audioLoadToken++;
+    clearResumeTimer();
+    resumeAttempts = 0;
+    currentSourceUrl = null;
+    currentSourceIsStream = false;
+    lastKnownTime = 0;
+    watchdogLastTime = -1;
+    watchdogStuckSince = 0;
+    audio.removeAttribute('src');
     songTitle.textContent = '';
     songArtist.textContent = '';
     playingSongId = null;
@@ -398,4 +453,205 @@ function syncMediaMetadataWithSW() {
             });
         }
     }
+}
+
+// =====================================================================
+// PHÁT NỀN KHI TẮT MÀN HÌNH (chế độ online)
+// ---------------------------------------------------------------------
+// Khi tắt màn hình, kết nối stream có thể bị ngắt (doze của Android,
+// chuyển Wi-Fi <-> 4G, server Render ngủ...). Trình duyệt khi đó bắn
+// 'error' / 'stalled' hoặc tự pause, và trước đây app reset hẳn trạng thái
+// -> nhạc dừng luôn. Các hàm dưới đây tự nối lại nguồn phát và tua về đúng
+// vị trí đang nghe, nên nhạc chạy tiếp mà không cần mở màn hình.
+// =====================================================================
+
+function clearResumeTimer() {
+    if (resumeTimer) {
+        clearTimeout(resumeTimer);
+        resumeTimer = null;
+    }
+}
+
+function updatePositionState() {
+    if (!('mediaSession' in navigator) || typeof navigator.mediaSession.setPositionState !== 'function') return;
+    if (!audio || !isFinite(audio.duration) || audio.duration <= 0) return;
+    try {
+        navigator.mediaSession.setPositionState({
+            duration: audio.duration,
+            playbackRate: audio.playbackRate || 1,
+            position: Math.min(Math.max(audio.currentTime || 0, 0), audio.duration)
+        });
+    } catch (e) {
+        // Một số trình duyệt ném lỗi nếu position vượt duration, bỏ qua.
+    }
+}
+
+function scheduleResume() {
+    if (!isPlaying || isLoadingSong || !currentSourceUrl) return;
+    if (resumeTimer || isResuming) return;
+    if (resumeAttempts >= MAX_RESUME_ATTEMPTS) return;
+
+    const delay = Math.min(1000 * Math.pow(2, resumeAttempts), 15000);
+    resumeAttempts++;
+    resumeTimer = setTimeout(() => {
+        resumeTimer = null;
+        tryResumePlayback();
+    }, delay);
+}
+
+async function tryResumePlayback() {
+    if (!audio || !isPlaying || isLoadingSong || !currentSourceUrl || isResuming) return;
+
+    // Mất mạng mà nguồn là stream thì chờ, sự kiện 'online' sẽ gọi lại ngay.
+    if (currentSourceIsStream && !navigator.onLine) {
+        scheduleResume();
+        return;
+    }
+
+    isResuming = true;
+    try {
+        // Bước 1: buffer còn dùng được -> chỉ cần play() lại.
+        if (!audio.error && audio.readyState >= 2) {
+            try {
+                await audio.play();
+                resumeAttempts = 0;
+                watchdogStuckSince = 0;
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+                return;
+            } catch (e) {
+                // rơi xuống bước 2
+            }
+        }
+
+        // Bước 2: nạp lại nguồn và tua về vị trí đang nghe.
+        const resumeAt = lastKnownTime;
+        const token = ++audioLoadToken;
+
+        // Nguồn offline là blob: URL, có thể đã bị thu hồi -> tạo lại từ Blob gốc.
+        if (!currentSourceIsStream) {
+            const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
+            const song = songListSource && songListSource[currentSongIndex];
+            if (!song || !(song.songData instanceof Blob)) return;
+            if (activeBlobUrl) URL.revokeObjectURL(activeBlobUrl);
+            activeBlobUrl = URL.createObjectURL(song.songData);
+            currentSourceUrl = activeBlobUrl;
+        }
+
+        audio.preload = 'auto';
+        audio.src = currentSourceUrl;
+        audio.load();
+
+        await new Promise((resolve, reject) => {
+            const cleanup = () => {
+                clearTimeout(timeoutId);
+                audio.removeEventListener('loadedmetadata', onReady);
+                audio.removeEventListener('error', onErr);
+            };
+            const onReady = () => { cleanup(); resolve(); };
+            const onErr = () => { cleanup(); reject(new Error('Không nạp được nguồn phát')); };
+            const timeoutId = setTimeout(() => { cleanup(); reject(new Error('Hết thời gian chờ nguồn phát')); }, 20000);
+            audio.addEventListener('loadedmetadata', onReady);
+            audio.addEventListener('error', onErr);
+        });
+
+        // Đã có lần load mới hơn (người dùng đổi bài) -> bỏ qua lần này.
+        if (token !== audioLoadToken) return;
+
+        if (resumeAt > 0 && isFinite(audio.duration) && resumeAt < audio.duration - 0.5) {
+            try { audio.currentTime = resumeAt; } catch (e) { /* chưa seek được */ }
+        }
+
+        await audio.play();
+        resumeAttempts = 0;
+        watchdogStuckSince = 0;
+        watchdogLastTime = -1;
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+        updatePositionState();
+    } catch (error) {
+        scheduleResume();
+    } finally {
+        isResuming = false;
+    }
+}
+
+// Nhịp kiểm tra dự phòng: bắt cả những ca trình duyệt không bắn sự kiện nào.
+function startPlaybackWatchdog() {
+    if (watchdogTimer) return;
+    watchdogTimer = setInterval(() => {
+        if (!audio || !isPlaying || isLoadingSong || !currentSourceUrl || isResuming) {
+            watchdogLastTime = -1;
+            watchdogStuckSince = 0;
+            return;
+        }
+
+        // Ca 1: hệ thống tự pause (mất audio focus, mạng chết).
+        if (audio.paused) {
+            audio.play().catch(() => {
+                // Đã thử hết số lần thì hạ bộ đếm xuống để vẫn còn cơ hội nạp lại
+                // nguồn: người dùng chưa bấm dừng thì ta không được bỏ cuộc hẳn.
+                if (resumeAttempts >= MAX_RESUME_ATTEMPTS) resumeAttempts = MAX_RESUME_ATTEMPTS - 1;
+                scheduleResume();
+            });
+            return;
+        }
+
+        // Ca 2: vẫn "đang phát" nhưng thời gian không nhích -> stall thật sự.
+        const t = audio.currentTime;
+        if (watchdogLastTime >= 0 && Math.abs(t - watchdogLastTime) < 0.15) {
+            if (!watchdogStuckSince) watchdogStuckSince = Date.now();
+            if (Date.now() - watchdogStuckSince > 12000) {
+                watchdogStuckSince = 0;
+                tryResumePlayback();
+            }
+        } else {
+            watchdogStuckSince = 0;
+            resumeAttempts = 0;
+        }
+        watchdogLastTime = t;
+    }, 4000);
+}
+
+function initPlaybackResilience() {
+    if (!audio || audio.dataset.resilienceReady === '1') return;
+    audio.dataset.resilienceReady = '1';
+
+    audio.addEventListener('timeupdate', () => {
+        if (audio.readyState >= 1 && !isNaN(audio.currentTime)) {
+            lastKnownTime = audio.currentTime;
+        }
+    });
+
+    audio.addEventListener('playing', () => {
+        resumeAttempts = 0;
+        watchdogStuckSince = 0;
+        clearResumeTimer();
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+        updatePositionState();
+    });
+
+    audio.addEventListener('durationchange', updatePositionState);
+    audio.addEventListener('seeked', updatePositionState);
+    audio.addEventListener('ratechange', updatePositionState);
+
+    // Trình duyệt tự pause dù người dùng không bấm -> nối lại.
+    audio.addEventListener('pause', () => {
+        if (isPlaying && !audio.ended && !isLoadingSong) scheduleResume();
+    });
+
+    ['stalled', 'suspend', 'waiting'].forEach(evt => {
+        audio.addEventListener(evt, () => {
+            if (isPlaying && !isLoadingSong) scheduleResume();
+        });
+    });
+
+    // Có mạng trở lại thì thử ngay, không chờ hết backoff.
+    window.addEventListener('online', () => {
+        if (isPlaying && currentSourceIsStream) {
+            resumeAttempts = 0;
+            clearResumeTimer();
+            tryResumePlayback();
+        }
+    });
+
+    startPlaybackWatchdog();
 }

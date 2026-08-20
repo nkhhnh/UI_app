@@ -1,3 +1,9 @@
+:root {
+    /* Khoa bang mau sang: chan Auto Dark Theme cua Chrome Android va che do
+       toi tu dong cua Samsung Internet ve lai mau cua trang. */
+    color-scheme: only light;
+}
+
 
   * {
     margin: 0;

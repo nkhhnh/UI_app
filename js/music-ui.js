@@ -10,6 +10,51 @@ let currentPopup = null;
 let activePopups = [];
 let activeAlbumInputPopup = null;
 
+// ===== Chống vẽ lại danh sách một cách vô ích ============================
+// updateSongList() được gọi từ 28 chỗ, trong đó có cả hai nhánh của
+// togglePlayPause - nghĩa là mỗi lần bấm play/pause là xoá sạch mọi
+// .song-item rồi dựng lại từ template và gắn lại listener cho từng item.
+// Với 300 bài đó là 300 lần clone DOM và ~900 listener, chỉ để đổi một class.
+// Giờ so "chữ ký" của danh sách: nội dung không đổi thì chỉ chuyển class
+// .playing, không dựng lại gì cả.
+let lastSongListSignature = null;
+let lastAlbumsSignature = null;
+let lastScrolledSongId = null;
+
+function buildSongListSignature(source, disableActions, isOnline) {
+    return [
+        currentAlbumId || '',
+        disableActions ? 1 : 0,
+        isOnline ? 1 : 0,
+        (source || []).map(s =>
+            `${s.song_id}|${s.custom_name}|${s.custom_artist}|${s.localPath ? 1 : 0}`
+        ).join(',')
+    ].join('#');
+}
+
+function updatePlayingHighlight() {
+    if (!songList) return;
+    const source = currentAlbumId ? currentAlbumPlaylist : songs;
+
+    songList.querySelectorAll('.song-item').forEach(item => {
+        const song = source[Number(item.dataset.index)];
+        const isPlayingItem = !!(song && playingSongId && String(song.song_id) === String(playingSongId));
+        item.classList.toggle('playing', isPlayingItem);
+    });
+}
+
+// Chỉ cuộn khi bài đang phát thực sự đổi, không cuộn mỗi lần play/pause.
+function scrollToPlayingIfChanged() {
+    if (!songList) return;
+    if (String(lastScrolledSongId) === String(playingSongId)) return;
+    lastScrolledSongId = playingSongId;
+
+    const activeItem = songList.querySelector('.song-item.playing');
+    if (activeItem) {
+        activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
 function updateSongList() {
     if (!songList) {
         return;
@@ -18,6 +63,25 @@ function updateSongList() {
     const isLoggedIn = !!localStorage.getItem('auth_token');
     const isOnline = navigator.onLine;
     const disableActions = (!isOnline || !isLoggedIn);
+
+    const signature = buildSongListSignature(
+        currentAlbumId ? currentAlbumPlaylist : songs,
+        disableActions,
+        isOnline
+    );
+
+    // Không chỉ so chữ ký: DOM có thể bị ghi đè từ bên ngoài (chỗ mở album
+    // gán thẳng songList.innerHTML). Đối chiếu thêm số phần tử thật để không
+    // bao giờ bỏ qua lần dựng lại mà thực sự cần.
+    const source = currentAlbumId ? currentAlbumPlaylist : songs;
+    const renderedCount = songList.querySelectorAll('.song-item').length;
+
+    if (signature === lastSongListSignature && renderedCount === (source || []).length) {
+        updatePlayingHighlight();
+        scrollToPlayingIfChanged();
+        return;
+    }
+    lastSongListSignature = signature;
     const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
     const noSongsMessage = songList.querySelector('.no-songs-message');
     const currentSongId = playingSongId;
@@ -60,11 +124,7 @@ function updateSongList() {
         });
     }
     updateSongItemEvents();
-
-    const activeItem = songList.querySelector('.song-item.playing');
-    if (activeItem) {
-        activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    scrollToPlayingIfChanged();
 }
 
 function displayAlbumsList() {
@@ -78,6 +138,18 @@ function displayAlbumsList() {
     const disableActions = (!isOnline || !isLoggedIn);
     const noAlbumsMessage = albumList.querySelector('.no-albums-message');
 
+    // Cùng cách chống vẽ lại như updateSongList: displayAlbumsList() được gọi
+    // 15 chỗ, phần lớn là lúc dữ liệu album không hề đổi.
+    const signature = [
+        disableActions ? 1 : 0,
+        isOnline ? 1 : 0,
+        albums.map(a => `${a.id}|${a.album_name}|${(a.songs || []).length}`).join(',')
+    ].join('#');
+
+    const renderedAlbums = albumList.querySelectorAll('.album-item').length;
+    if (signature === lastAlbumsSignature && renderedAlbums === albums.length) return;
+    lastAlbumsSignature = signature;
+
     albumList.querySelectorAll('.album-item').forEach(item => item.remove());
 
     if (albums.length === 0) {
@@ -88,9 +160,6 @@ function displayAlbumsList() {
     } else {
         noAlbumsMessage.style.display = 'none';
         const albumTemplate = document.getElementById('album-item-template').content;
-        const songTemplate = document.getElementById('album-song-item-template').content;
-
-        const currentSongId = playingSongId;
 
         albums.forEach(album => {
             const albumClone = document.importNode(albumTemplate, true);
@@ -105,46 +174,77 @@ function displayAlbumsList() {
             const albumOptionsBtn = albumClone.querySelector('.album-options-btn');
             if (disableActions) albumOptionsBtn.classList.add('disabled');
 
+            // Các dòng bài hát KHÔNG dựng sẵn nữa. .album-songs đang là
+            // display:none và không chỗ nào thêm class .active, nên trước đây
+            // toàn bộ số dòng này được tạo ra rồi không bao giờ hiện lên -
+            // 20 album x 30 bài là 600 nút DOM cùng listener cho mỗi nút Xoá.
+            // renderAlbumSongs() bên dưới dựng chúng khi album được mở ra.
             const albumSongs = albumClone.querySelector('.album-songs');
-            const noAlbumSongsMessage = albumSongs.querySelector('.no-album-songs-message');
-            const songsToDisplay = (album.songs || []).filter(song => isOnline || (songs.find(s => String(s.song_id) === String(song.song_id))?.localPath));
-
-            if (songsToDisplay.length > 0) {
-                noAlbumSongsMessage.style.display = 'none';
-                songsToDisplay.forEach(song => {
-                    const songClone = document.importNode(songTemplate, true);
-                    songClone.querySelector('.song-title').textContent = song.custom_name || 'Không xác định';
-                    songClone.querySelector('.song-artist').textContent = song.custom_artist || 'Không xác định';
-                    songClone.querySelector('.remove-song-btn').dataset.song = song.song_id;
-                    songClone.querySelector('.remove-song-btn').dataset.album = album.id;
-
-                    if (!isOnline && !songs.find(s => String(s.song_id) === String(song.song_id))?.localPath) {
-                        songClone.querySelector('.album-song-item').classList.add('disabled');
-                        songClone.querySelector('.album-song-item').title = 'Bài hát không khả dụng ngoại tuyến';
-                        songClone.querySelector('.remove-song-btn').disabled = true;
-                    }
-
-                    albumSongs.appendChild(songClone);
-
-                    const songItem = albumSongs.lastElementChild;
-                    if (currentSongId && String(song.song_id) === String(currentSongId)) {
-                        songItem.classList.add('playing');
-                    }
-                });
-            } else {
-                noAlbumSongsMessage.style.display = 'block';
-                noAlbumSongsMessage.textContent = isOnline ? 'Không có bài hát trong album này.' : 'Không có bài hát ngoại tuyến trong album này.';
-            }
+            albumSongs.dataset.rendered = '0';
 
             albumList.appendChild(albumClone);
         });
     }
     updateAlbumItemEvents();
+}
 
-    const activeAlbumItem = albumList.querySelector('.album-song-item.playing');
-    if (activeAlbumItem) {
-        activeAlbumItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+/**
+ * Dựng danh sách bài hát của MỘT album, chỉ khi album đó được mở ra.
+ *
+ * Gọi hàm này khi thêm class .active cho .album-songs. Hiện chưa nơi nào
+ * mở album trong danh sách (xem ghi chú ở displayAlbumsList), nên mặc định
+ * không có dòng nào được dựng.
+ */
+function renderAlbumSongs(albumItem) {
+    if (!albumItem) return;
+
+    const albumSongs = albumItem.querySelector('.album-songs');
+    if (!albumSongs || albumSongs.dataset.rendered === '1') return;
+
+    const album = albums.find(a => String(a.id) === String(albumItem.dataset.albumId));
+    if (!album) return;
+
+    const isOnline = navigator.onLine;
+    const songTemplate = document.getElementById('album-song-item-template').content;
+    const noAlbumSongsMessage = albumSongs.querySelector('.no-album-songs-message');
+
+    const songsToDisplay = (album.songs || []).filter(song =>
+        isOnline || songs.find(s => String(s.song_id) === String(song.song_id))?.localPath
+    );
+
+    if (songsToDisplay.length === 0) {
+        noAlbumSongsMessage.style.display = 'block';
+        noAlbumSongsMessage.textContent = isOnline
+            ? 'Không có bài hát trong album này.'
+            : 'Không có bài hát ngoại tuyến trong album này.';
+        albumSongs.dataset.rendered = '1';
+        return;
     }
+
+    noAlbumSongsMessage.style.display = 'none';
+
+    songsToDisplay.forEach(song => {
+        const songClone = document.importNode(songTemplate, true);
+        songClone.querySelector('.song-title').textContent = song.custom_name || 'Không xác định';
+        songClone.querySelector('.song-artist').textContent = song.custom_artist || 'Không xác định';
+        songClone.querySelector('.remove-song-btn').dataset.song = song.song_id;
+        songClone.querySelector('.remove-song-btn').dataset.album = album.id;
+
+        if (!isOnline && !songs.find(s => String(s.song_id) === String(song.song_id))?.localPath) {
+            songClone.querySelector('.album-song-item').classList.add('disabled');
+            songClone.querySelector('.album-song-item').title = 'Bài hát không khả dụng ngoại tuyến';
+            songClone.querySelector('.remove-song-btn').disabled = true;
+        }
+
+        albumSongs.appendChild(songClone);
+
+        if (playingSongId && String(song.song_id) === String(playingSongId)) {
+            albumSongs.lastElementChild.classList.add('playing');
+        }
+    });
+
+    albumSongs.dataset.rendered = '1';
+    updateAlbumItemEvents();
 }
 
 function updateSongItemEvents() {
@@ -477,6 +577,7 @@ function updateAlbumItemEvents() {
                 if (playlistTitle) playlistTitle.textContent = 'Đang tải...';
                 const songListEl = document.querySelector('.song-list');
                 if (songListEl) songListEl.innerHTML = '<p class="no-songs-message" style="display:block; color:#fff;">Đang đồng bộ dữ liệu...</p>';
+                lastSongListSignature = null; // DOM vừa bị ghi đè, chữ ký cũ không còn đúng
 
                 await loadAlbumSongs(albumId);
                 if (currentAlbumPlaylist.length > 0) await appendSong(0, true);
@@ -485,6 +586,7 @@ function updateAlbumItemEvents() {
                 if (playlistTitle) playlistTitle.textContent = 'Đang tải...';
                 const songListEl = document.querySelector('.song-list');
                 if (songListEl) songListEl.innerHTML = '<p class="no-songs-message" style="display:block; color:#fff;">Đang đồng bộ dữ liệu...</p>';
+                lastSongListSignature = null; // DOM vừa bị ghi đè, chữ ký cũ không còn đúng
 
                 await loadAlbumSongs(albumId);
             }
@@ -664,7 +766,15 @@ function setupEvents() {
 
     if (nextBtn) nextBtn.addEventListener('click', debouncedNext);
 
-    audio.addEventListener('error', () => resetAudioState());
+    audio.addEventListener('error', () => {
+        // Lỗi phát nhạc thường chỉ là đứt kết nối tạm thời khi tắt màn hình.
+        // Nếu người dùng vẫn đang muốn nghe thì thử nối lại thay vì reset hẳn.
+        if (isPlaying && !isLoadingSong && currentSourceUrl) {
+            scheduleResume();
+            return;
+        }
+        if (!isLoadingSong) resetAudioState();
+    });
 
     if (randomBtn) {
         randomBtn.addEventListener('click', () => {
@@ -799,13 +909,36 @@ function setupEvents() {
             addSongSubmit.disabled = true;
             addSongSubmit.style.opacity = '0.5';
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('custom_name', title);
-            formData.append('custom_artist', artist);
-
             try {
-                const response = await fetchAPI('/songs', 'POST', formData);
+                let response = null;
+
+                // Hỏi trước bằng mã hash: file đã có trên hệ thống thì được gắn
+                // thẳng vào thư viện, không phải tải lên byte nào.
+                const fileHash = await computeFileHash(file);
+
+                if (fileHash) {
+                    loadingIndicator.textContent = 'Đang kiểm tra...';
+                    try {
+                        const check = await fetchAPI('/songs/check-hash', 'POST', {
+                            file_hash: fileHash,
+                            custom_name: title,
+                            custom_artist: artist
+                        });
+                        if (check && check.exists) response = check;
+                    } catch (error) {
+                        // Không hỏi được thì cứ tải lên như bình thường.
+                    }
+                }
+
+                if (!response) {
+                    loadingIndicator.textContent = 'Đang tải lên...';
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('custom_name', title);
+                    formData.append('custom_artist', artist);
+                    response = await fetchAPI('/songs', 'POST', formData);
+                }
+
                 if (!response || !response.song) throw new Error('Phản hồi máy chủ không hợp lệ');
                 await loadSongs();
                 playHistory = [currentSongIndex];
@@ -813,7 +946,12 @@ function setupEvents() {
                 document.querySelector('.add-song-title').value = '';
                 document.querySelector('.add-song-artist').value = '';
                 document.querySelector('.add-song-file').value = '';
-                showNotification(`Đã tải lên "${response.song.custom_name}" thành công`, 'success');
+                showNotification(
+                    response.exists
+                        ? `"${response.song.custom_name}" đã có sẵn trên hệ thống, thêm vào thư viện ngay`
+                        : `Đã tải lên "${response.song.custom_name}" thành công`,
+                    'success'
+                );
             } catch (error) {
                 showNotification('Không thể tải lên bài hát: ' + error.message, 'error');
             } finally {
@@ -870,6 +1008,37 @@ function setupEvents() {
     });
 
     if ('mediaSession' in navigator) {
+        const safeHandler = (action, handler) => {
+            try {
+                navigator.mediaSession.setActionHandler(action, handler);
+            } catch (e) {
+                // Trình duyệt không hỗ trợ action này.
+            }
+        };
+
+        safeHandler('seekto', (details) => {
+            if (!audio || isNaN(audio.duration)) return;
+            if (details.fastSeek && typeof audio.fastSeek === 'function') {
+                audio.fastSeek(details.seekTime);
+            } else {
+                audio.currentTime = details.seekTime;
+            }
+            updatePositionState();
+        });
+        safeHandler('seekbackward', (details) => {
+            if (!audio || isNaN(audio.duration)) return;
+            audio.currentTime = Math.max(0, audio.currentTime - (details.seekOffset || 10));
+            updatePositionState();
+        });
+        safeHandler('seekforward', (details) => {
+            if (!audio || isNaN(audio.duration)) return;
+            audio.currentTime = Math.min(audio.duration, audio.currentTime + (details.seekOffset || 10));
+            updatePositionState();
+        });
+        safeHandler('stop', () => {
+            togglePlayPause(false).catch(() => { });
+        });
+
         navigator.mediaSession.setActionHandler('play', () => togglePlayPause(true));
         navigator.mediaSession.setActionHandler('pause', () => togglePlayPause(false));
         navigator.mediaSession.setActionHandler('previoustrack', () => {
@@ -933,6 +1102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loopBtn = document.querySelector('.fa-redo');
     playlistTitle = document.querySelector('.playlist-header');
     setupEvents();
+    initPlaybackResilience();
     try {
         await initIndexedDB();
         await loadSongs();
@@ -966,14 +1136,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 displayAlbumsList();
 
                 if (currentSong && isPlayingNow) {
+                    // Mạng chập chờn khi tắt màn hình (Wi-Fi ngủ, đổi sang 4G) làm
+                    // sự kiện online/offline bắn liên tục. Trước đây chỗ này gọi
+                    // appendSong() -> bài đang nghe bị phát lại từ đầu, hoặc bị
+                    // resetAudioState() -> nhạc tắt hẳn. Giờ chỉ đồng bộ lại chỉ số
+                    // bài hát, còn phần âm thanh để cơ chế tự phục hồi lo.
                     const newSource = currentAlbumId ? currentAlbumPlaylist : songs;
                     const newIndex = newSource.findIndex(s => s && s.song_id === currentSong.song_id);
-                    if (newIndex !== -1) {
-                        currentSongIndex = newIndex;
-                        appendSong(newIndex, true).catch(() => resetAudioState());
-                    } else {
-                        resetAudioState();
-                    }
+                    // Nếu bài đang nghe không còn trong danh sách mới (ví dụ chuyển
+                    // sang offline mà bài này chưa tải về) thì vẫn để nó phát hết,
+                    // không cắt ngang giữa chừng.
+                    if (newIndex !== -1) currentSongIndex = newIndex;
+                    updateSongList();
                 }
             } catch (error) {
                 showNotification('Không thể cập nhật danh sách: ' + error.message, 'error');
@@ -1041,23 +1215,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        if (isPlaying && audio.src && audio.src !== window.location.href) {
-            audio.play().catch(err => {
-                if (err.name === 'NotAllowedError') {
-                    showNotification('Yêu cầu tương tác để tiếp tục phát nhạc nền.', 'info');
-                }
-            });
-            syncMediaMetadataWithSW();
-        }
-    } else {
-        if (isPlaying && audio.src && audio.src !== window.location.href) {
-            audio.play().catch(() => { });
-        } else {
-            audio.pause();
-        }
-        syncMediaMetadataWithSW();
+    // Khi tắt màn hình / chuyển app: KHÔNG đụng vào audio đang chạy.
+    // Trước đây nhánh else gọi audio.pause() vô điều kiện, làm nhạc tắt khi
+    // quay lại app; còn nhánh hidden gọi play() thừa và bắn thông báo lỗi.
+    if (!audio) return;
+
+    if (isPlaying && audio.paused && currentSourceUrl && !isLoadingSong) {
+        // Chỉ can thiệp khi trình duyệt đã tự dừng dù ta vẫn muốn nghe.
+        audio.play().catch(() => scheduleResume());
     }
+
+    if (!document.hidden) {
+        updatePositionState();
+    }
+    syncMediaMetadataWithSW();
 });
 
 if ('serviceWorker' in navigator) {
