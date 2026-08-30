@@ -2,19 +2,65 @@
 * {
     margin: 0;
     padding: 0;
-  
 }
 
-/* Hiệu ứng fade cho container */
-.page-content {
-    opacity: 0; /* Bắt đầu với opacity 0 */
-    transition: opacity 2.5s ease; /* Hiệu ứng fade */
+/* ═══════════════════════════════════════════════════════════════════
+   CHUYỂN TRANG BẰNG VIEW TRANSITIONS API
+
+   Trình duyệt tự chụp trang cũ, tải trang mới, rồi chuyển cảnh giữa hai
+   ảnh chụp đó. Không cần JavaScript chặn link — nên cũng không còn mấy
+   vấn đề của cách cũ:
+
+     - Ctrl+click và chuột giữa để mở tab mới hoạt động bình thường
+       (cách cũ gọi preventDefault trên MỌI thẻ <a> nên chặn hết)
+     - Link chèn động vào menu cũng có hiệu ứng
+       (cách cũ gắn listener một lần lúc parse script, menu chèn sau
+        nên không bao giờ được gắn)
+     - Không còn rủi ro trang trắng: bản cũ đặt .page-content{opacity:0}
+       rồi chờ JS thêm class .loaded mới hiện ra, JS lỗi ở đâu đó trước
+       là toàn bộ nội dung vô hình
+
+   Điều kiện: cả trang đi lẫn trang đến đều phải khai báo @view-transition,
+   nên file này phải được nạp ở MỌI trang.
+
+   Trình duyệt chưa hỗ trợ (Firefox, Safari cũ) thì chuyển trang bình
+   thường không hiệu ứng — không hỏng gì.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@view-transition {
+    navigation: auto;
 }
 
-.page-content.loaded {
-    opacity: 1; /* Fade-in khi trang tải xong */
+/* Trang cũ lùi ra, nhanh. */
+::view-transition-old(root) {
+    animation: pageLeave 130ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
-.page-content.fading {
-    opacity: 0; /* Fade-out khi rời trang */
+/* Trang mới vào, chậm hơn chút và trễ một nhịp để hai ảnh không chồng
+   lên nhau thành vệt mờ. */
+::view-transition-new(root) {
+    animation: pageEnter 220ms cubic-bezier(0, 0, 0.2, 1) 60ms both;
+}
+
+@keyframes pageLeave {
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
+
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+/* Người bật giảm chuyển động thì chuyển thẳng, không animate. */
+@media (prefers-reduced-motion: reduce) {
+
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+    }
 }

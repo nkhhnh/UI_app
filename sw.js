@@ -1,4 +1,4 @@
-const CACHE_NAME = 'music-app-cache-v35';
+const CACHE_NAME = 'music-app-cache-v36';
 const STATIC_ASSETS = [
   '/index.html',
   '/',
@@ -27,7 +27,6 @@ const STATIC_ASSETS = [
   '/css/weather.css',
   '/css/img-home.css',
   '/js/nav.js',
-  '/js/pagetrans.js',
   '/js/register.js',
   '/js/index.js',
   '/js/login.js',
