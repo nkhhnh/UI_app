@@ -680,9 +680,11 @@ function setupEvents() {
         if (timeStart) timeStart.textContent = formatTime(audio.currentTime);
         if (timeDuration) timeDuration.textContent = formatTime(audio.duration);
 
-        if (isPlaying && audio.duration - audio.currentTime < 10) {
-            // Tuỳ chọn: preload bài tiếp theo nếu offline có bài ngoại tuyến
-            // Nếu online, stream trực tiếp không cần preload
+        // Tải sẵn bài kế tiếp vào RAM trước khi bài này kết thúc. Phải bắt đầu
+        // sớm: khoảng lặng lúc chuyển bài chính là lúc trang nền bị Android đóng
+        // băng, đến lúc đó mới đi lấy dữ liệu thì đã muộn.
+        if (isPlaying && isFinite(audio.duration) && audio.duration - audio.currentTime < 45) {
+            prefetchNextSong();
         }
     });
 

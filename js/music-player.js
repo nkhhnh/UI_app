@@ -26,7 +26,81 @@ let isResuming = false;
 // của thẻ <audio> và bị hạ xuống false mỗi lần chuyển bài; lớp tự phục hồi mà
 // bám vào nó thì đúng lúc chuyển bài (khoảnh khắc mong manh nhất) lại tê liệt.
 let wantsPlayback = false;
+// Bài kế tiếp được tải sẵn vào RAM (xem prefetchNextSong).
+let prefetchedSongId = null;
+let prefetchInFlight = false;
 const MAX_RESUME_ATTEMPTS = 10;
+
+// Lúc bài hiện tại kết thúc, thẻ <audio> im tiếng suốt khoảng thời gian nạp
+// nguồn mới. Android chỉ miễn đóng băng cho một trang nền KHI trang đó đang
+// thực sự phát ra tiếng — nên nếu khoảng lặng ấy còn phải chờ mạng thì trang bị
+// đóng băng ngay giữa chừng: nhạc dừng hẳn ở cuối bài, và chỉ chạy tiếp lúc bật
+// màn hình (trang được đánh thức, await dở dang mới hoàn tất).
+//
+// Cách chữa là để khoảng lặng đó không chạm vào mạng nữa: tải sẵn bài kế tiếp
+// vào RAM từ lúc bài hiện tại còn đang phát, khi trang còn sống và mạng còn
+// thông. Blob nằm ở song.songData nên appendSong dùng lại đúng nhánh offline
+// sẵn có, không cần nhánh riêng.
+function releasePrefetched() {
+    if (prefetchedSongId === null) return;
+
+    [songs, currentAlbumPlaylist].forEach(list => {
+        if (!Array.isArray(list)) return;
+        list.forEach(s => {
+            // Chỉ thả bản tạm. Bài người dùng đã tải hẳn về máy có localPath,
+            // và bài đang phát thì giữ lại để cơ chế tự phục hồi còn nạp lại được.
+            if (s && s.song_id === prefetchedSongId && s.song_id !== playingSongId && !s.localPath) {
+                delete s.songData;
+            }
+        });
+    });
+    prefetchedSongId = null;
+}
+
+async function prefetchNextSong() {
+    if (prefetchInFlight || !navigator.onLine) return;
+
+    const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
+    if (!songListSource || songListSource.length === 0) return;
+
+    // Chỉ đoán trước được khi phát tuần tự. Chế độ ngẫu nhiên thì
+    // getNextSongIndex() có tác dụng phụ (đẩy chỉ số vào playedIndices) nên gọi
+    // ở đây sẽ làm hỏng thứ tự phát; lặp một bài thì nguồn đã sẵn rồi.
+    if (isRandom || isLoopSingle) return;
+
+    const nextIndex = currentSongIndex + 1;
+    if (nextIndex <= 0 || nextIndex >= songListSource.length) return;
+
+    const next = songListSource[nextIndex];
+    if (!next || !next.song_id) return;
+    if (next.songData instanceof Blob) return;
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) return;
+
+    prefetchInFlight = true;
+    try {
+        const response = await fetch(`${API_BASE_URL}/songs/${next.song_id}/download`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/octet-stream'
+            },
+            cache: 'no-store'
+        });
+        if (!response.ok) return;
+
+        const blob = await response.blob();
+        if (!blob.size || !blob.type.startsWith('audio/')) return;
+
+        releasePrefetched();
+        next.songData = blob;
+        prefetchedSongId = next.song_id;
+    } catch (error) {
+        // Mạng chập chờn: bỏ qua. Lúc chuyển bài sẽ quay về đường stream như cũ.
+    } finally {
+        prefetchInFlight = false;
+    }
+}
 
 function debounce(func, wait) {
     let timeout;
