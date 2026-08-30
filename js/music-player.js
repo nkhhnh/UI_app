@@ -486,7 +486,10 @@ function updatePositionState() {
     }
 }
 
-function scheduleResume() {
+// hard = true: cho phép nạp lại nguồn và tua về vị trí cũ. Chỉ dùng cho lỗi
+// thật (audio.error, kẹt kéo dài, vừa có mạng lại). Mặc định là "mềm": chỉ gọi
+// play() nếu trình duyệt đã tự dừng, còn đang buffer thì để nó tự hồi phục.
+function scheduleResume(hard = false) {
     if (!isPlaying || isLoadingSong || !currentSourceUrl) return;
     if (resumeTimer || isResuming) return;
     if (resumeAttempts >= MAX_RESUME_ATTEMPTS) return;
@@ -495,18 +498,24 @@ function scheduleResume() {
     resumeAttempts++;
     resumeTimer = setTimeout(() => {
         resumeTimer = null;
-        tryResumePlayback();
+        tryResumePlayback(hard);
     }, delay);
 }
 
-async function tryResumePlayback() {
+async function tryResumePlayback(hard = false) {
     if (!audio || !isPlaying || isLoadingSong || !currentSourceUrl || isResuming) return;
 
     // Mất mạng mà nguồn là stream thì chờ, sự kiện 'online' sẽ gọi lại ngay.
     if (currentSourceIsStream && !navigator.onLine) {
-        scheduleResume();
+        scheduleResume(hard);
         return;
     }
+
+    // Hẹn lượt thử kế tiếp trong finally, sau khi đã hạ cờ isResuming. Trước
+    // đây scheduleResume() được gọi trong khối catch, lúc isResuming vẫn là
+    // true, nên nó luôn thoát sớm và chuỗi thử lại chết ngay từ lần đầu.
+    let retryAfter = false;
+    let retryHard = hard;
 
     isResuming = true;
     try {
@@ -521,6 +530,15 @@ async function tryResumePlayback() {
             } catch (e) {
                 // rơi xuống bước 2
             }
+        }
+
+        // readyState < 2 mà audio.error rỗng thì đây chỉ là buffer bình thường,
+        // trình duyệt sẽ tự nạp tiếp. Nạp lại nguồn ở đây sẽ tua ngược về
+        // lastKnownTime và phát lặp lại đoạn vừa nghe — đúng tiếng rè/ngắt
+        // quãng. Chỉ hẹn kiểm tra lại, không đụng vào audio.
+        if (!hard && !audio.error) {
+            retryAfter = true;
+            return;
         }
 
         // Bước 2: nạp lại nguồn và tua về vị trí đang nghe.
@@ -568,9 +586,11 @@ async function tryResumePlayback() {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
         updatePositionState();
     } catch (error) {
-        scheduleResume();
+        retryAfter = true;
+        retryHard = true;
     } finally {
         isResuming = false;
+        if (retryAfter) scheduleResume(retryHard);
     }
 }
 
@@ -601,7 +621,7 @@ function startPlaybackWatchdog() {
             if (!watchdogStuckSince) watchdogStuckSince = Date.now();
             if (Date.now() - watchdogStuckSince > 12000) {
                 watchdogStuckSince = 0;
-                tryResumePlayback();
+                tryResumePlayback(true);
             }
         } else {
             watchdogStuckSince = 0;
@@ -633,15 +653,20 @@ function initPlaybackResilience() {
     audio.addEventListener('seeked', updatePositionState);
     audio.addEventListener('ratechange', updatePositionState);
 
-    // Trình duyệt tự pause dù người dùng không bấm -> nối lại.
+    // Trình duyệt tự pause dù người dùng không bấm -> gọi play() lại (mức mềm).
     audio.addEventListener('pause', () => {
-        if (isPlaying && !audio.ended && !isLoadingSong) scheduleResume();
+        if (isPlaying && !audio.ended && !isLoadingSong && !isResuming) scheduleResume(false);
     });
 
-    ['stalled', 'suspend', 'waiting'].forEach(evt => {
-        audio.addEventListener(evt, () => {
-            if (isPlaying && !isLoadingSong) scheduleResume();
-        });
+    // 'suspend' và 'waiting' là sự kiện BÌNH THƯỜNG của quá trình buffer:
+    // 'suspend' bắn ngay khi trình duyệt nạp đủ và ngưng tải, 'waiting' bắn mỗi
+    // lần buffer cạn rồi trình duyệt tự nạp tiếp. Trước đây cả hai đều kích hoạt
+    // nạp lại nguồn + tua về lastKnownTime, làm bài hát lặp lại một đoạn ngắn
+    // vài giây một lần -> nghe thành tiếng rè. Nay chỉ theo dõi 'stalled' (mạng
+    // thật sự không nhả dữ liệu) và cũng chỉ thử ở mức mềm; trường hợp kẹt thật
+    // đã có watchdog lo.
+    audio.addEventListener('stalled', () => {
+        if (isPlaying && !isLoadingSong && !isResuming) scheduleResume(false);
     });
 
     // Có mạng trở lại thì thử ngay, không chờ hết backoff.
@@ -649,7 +674,7 @@ function initPlaybackResilience() {
         if (isPlaying && currentSourceIsStream) {
             resumeAttempts = 0;
             clearResumeTimer();
-            tryResumePlayback();
+            tryResumePlayback(true);
         }
     });
 

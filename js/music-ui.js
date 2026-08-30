@@ -770,7 +770,8 @@ function setupEvents() {
         // Lỗi phát nhạc thường chỉ là đứt kết nối tạm thời khi tắt màn hình.
         // Nếu người dùng vẫn đang muốn nghe thì thử nối lại thay vì reset hẳn.
         if (isPlaying && !isLoadingSong && currentSourceUrl) {
-            scheduleResume();
+            // audio.error da duoc set -> day la loi that, cho phep nap lai nguon.
+            scheduleResume(true);
             return;
         }
         if (!isLoadingSong) resetAudioState();
