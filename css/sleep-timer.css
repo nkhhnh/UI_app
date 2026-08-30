@@ -16,53 +16,138 @@
     align-items: center;
 }
 
+/* Badge nam NGOAI luong (position:absolute) chu khong phai flex item.
+   Ban truoc de no trong luong: luc hen gio thi badge hien ra, .sleep-timer
+   rong them ~30px, va ca hang icon (von can giua) bi day lech sang trai.
+   Absolute thi no khong chiem cho, cac icon ben canh dung yen tuyet doi.
+
+   Dat ben PHAI icon chu khong de len: .sleep-timer la phan tu cuoi cua mot
+   hang can giua, nen ben phai no luon con khoang trong o moi co man hinh. */
 .sleep-timer-badge {
     position: absolute;
-    top: 0;
-    right: 0;
-    font-size: 10px;
+    left: calc(100% - 4px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
     font-weight: 600;
     line-height: 1;
     color: #db0c0c;
+    letter-spacing: 0.2px;
     pointer-events: none;
+    white-space: nowrap;
 }
+
+/* ── Menu xổ lên ─────────────────────────────────────────────────── */
 
 .sleep-timer-menu {
     display: none;
     position: absolute;
-    bottom: calc(100% + 10px);
-    right: 0;
-    min-width: 150px;
-    max-width: calc(100vw - 20px);
-    padding: 6px 0;
-    background: #282828;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    bottom: calc(100% + 12px);
+    right: -8px;
+    min-width: 176px;
+    max-width: calc(100vw - 24px);
+    padding: 6px;
+    /* Nen duc lam du phong: trinh duyet khong ho tro backdrop-filter thi menu
+       van doc duoc binh thuong, khong bao gio bi trong suot lo chu ben duoi. */
+    background: #1f1f1f;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    z-index: 1200;
 }
 
 .sleep-timer-menu.open {
     display: block;
+    animation: sleepMenuIn 0.16s ease-out;
 }
+
+/* Dùng animation chứ không phải transition: menu bật/tắt bằng display,
+   mà transition không chạy khi display đổi từ none. */
+@keyframes sleepMenuIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Mũi nhọn chỉ xuống nút, cho biết menu thuộc về nút nào. */
+.sleep-timer-menu::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 22px;
+    border: 7px solid transparent;
+    border-top-color: #1f1f1f;
+}
+
+/* Lam mo phan nen phia sau menu (frosted glass). Bat buoc phai kem nen ban
+   trong suot, vi backdrop-filter chi lam mo nhung gi NAM DUOI phan tu. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .sleep-timer-menu {
+        background: rgba(26, 26, 28, 0.68);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    .sleep-timer-menu::after {
+        border-top-color: rgba(26, 26, 28, 0.68);
+    }
+}
+
+/* ── Các dòng lựa chọn ───────────────────────────────────────────── */
 
 .sleep-timer-option,
 .sleep-timer-cancel {
-    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 8px;
     font-size: 14px;
-    color: #d0d0d0;
+    color: #cfcfcf;
     white-space: nowrap;
     cursor: pointer;
+    transition: background 0.15s, color 0.15s;
 }
 
 .sleep-timer-option:hover,
 .sleep-timer-cancel:hover {
-    background: #3a3a3a;
+    background: rgba(255, 255, 255, 0.08);
     color: #fff;
+}
+
+/* Dấu tick cho mốc đang chọn. */
+.sleep-timer-option::after {
+    content: '';
+    width: 14px;
+    text-align: right;
+    color: #db0c0c;
+    font-weight: 700;
+}
+
+.sleep-timer-option.selected {
+    color: #fff;
+}
+
+.sleep-timer-option.selected::after {
+    content: '✓';
 }
 
 .sleep-timer-cancel {
     display: none;
     margin-top: 6px;
-    border-top: 1px solid #3a3a3a;
+    padding-top: 13px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0 0 8px 8px;
     color: #db0c0c;
+}
+
+.sleep-timer-cancel:hover {
+    background: rgba(219, 12, 12, 0.12);
+    color: #ff4d4d;
 }

@@ -21,6 +21,7 @@
 
     let countdownEndsAt = null;  // mốc thời gian sẽ tắt (ms)
     let stopAfterCurrent = false;
+    let selectedValue = null;    // 'end' hoặc số phút, để đánh dấu tick
     let tickId = null;
     let fadeId = null;
 
@@ -45,24 +46,32 @@
         btn.classList.toggle('active', isActive());
 
         if (stopAfterCurrent) {
-            badge.textContent = '♪';
-            return;
-        }
-        if (countdownEndsAt === null) {
+            badge.textContent = 'hết bài';
+        } else if (countdownEndsAt === null) {
             badge.textContent = '';
-            return;
+        } else {
+            const left = Math.max(0, countdownEndsAt - Date.now());
+            const mins = Math.ceil(left / 60000);
+            badge.textContent = mins >= 60
+                ? Math.floor(mins / 60) + 'h' + String(mins % 60).padStart(2, '0')
+                : mins + '′';
         }
 
-        const left = Math.max(0, countdownEndsAt - Date.now());
-        const mins = Math.ceil(left / 60000);
-        badge.textContent = mins >= 60
-            ? Math.floor(mins / 60) + 'h'
-            : String(mins);
+        markSelected();
+    }
+
+    // Đánh dấu mốc đang chọn bằng dấu tick.
+    function markSelected() {
+        if (!menu) return;
+        menu.querySelectorAll('.sleep-timer-option').forEach(item => {
+            item.classList.toggle('selected', item.dataset.minutes === selectedValue);
+        });
     }
 
     function cancel(quiet) {
         countdownEndsAt = null;
         stopAfterCurrent = false;
+        selectedValue = null;
 
         if (tickId) { clearInterval(tickId); tickId = null; }
         if (fadeId) { clearInterval(fadeId); fadeId = null; }
@@ -119,6 +128,7 @@
 
     function startCountdown(minutes) {
         cancel(true);
+        selectedValue = String(minutes);
         countdownEndsAt = Date.now() + minutes * 60000;
 
         tickId = setInterval(() => {
@@ -141,6 +151,7 @@
 
     function startAfterCurrent() {
         cancel(true);
+        selectedValue = 'end';
         stopAfterCurrent = true;
         render();
         if (typeof showNotification === 'function') {
