@@ -670,7 +670,7 @@ function setupEvents() {
         });
     }
 
-    bindToBoth('timeupdate', () => {
+    audio.addEventListener('timeupdate', () => {
         if (audio.readyState < 1 || isNaN(audio.currentTime) || isNaN(audio.duration)) return;
         if (progress) {
             progress.value = audio.currentTime;
@@ -680,11 +680,13 @@ function setupEvents() {
         if (timeStart) timeStart.textContent = formatTime(audio.currentTime);
         if (timeDuration) timeDuration.textContent = formatTime(audio.duration);
 
-        // Chuẩn bị thẻ chờ cho lượt chuyển bài. Hàm tự biết khi nào tới lúc.
-        prepareHandoff();
+        if (isPlaying && audio.duration - audio.currentTime < 10) {
+            // Tuỳ chọn: preload bài tiếp theo nếu offline có bài ngoại tuyến
+            // Nếu online, stream trực tiếp không cần preload
+        }
     });
 
-    bindToBoth('ended', () => {
+    audio.addEventListener('ended', () => {
         const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
         if (!songListSource || songListSource.length === 0) {
             resetAudioState();
@@ -692,11 +694,6 @@ function setupEvents() {
             showNotification('Không có bài hát để phát.', 'info');
             return;
         }
-
-        // Thẻ chờ đã chạy sẵn thì tiếp quản ngay, kể cả ở chế độ lặp một bài:
-        // không pause, không gán src, không await — nên không có khoảng lặng nào
-        // để trang bị đóng băng. Phải đặt trước nhánh isLoopSingle bên dưới.
-        if (commitHandoff()) return;
 
         if (isLoopSingle) {
             appendSong(currentSongIndex, true).catch(err => {
@@ -769,7 +766,7 @@ function setupEvents() {
 
     if (nextBtn) nextBtn.addEventListener('click', debouncedNext);
 
-    bindToBoth('error', () => {
+    audio.addEventListener('error', () => {
         // Lỗi phát nhạc thường chỉ là đứt kết nối tạm thời khi tắt màn hình.
         // Nếu người dùng vẫn đang muốn nghe thì thử nối lại thay vì reset hẳn.
         if (wantsPlayback && !isLoadingSong && currentSourceUrl) {
@@ -1075,8 +1072,6 @@ function setupEvents() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     audio = document.getElementById('audio');
-    // Phải chạy TRƯỚC mọi bindToBoth() để thẻ thứ hai đã tồn tại lúc gắn listener.
-    initGaplessPlayback();
     playBtn = document.querySelector('.music-control__icon-play');
     playIcon = playBtn?.querySelector('.fa-play');
     pauseIcon = playBtn?.querySelector('.fa-pause');
