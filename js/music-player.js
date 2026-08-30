@@ -26,8 +26,9 @@ let isResuming = false;
 // của thẻ <audio> và bị hạ xuống false mỗi lần chuyển bài; lớp tự phục hồi mà
 // bám vào nó thì đúng lúc chuyển bài (khoảnh khắc mong manh nhất) lại tê liệt.
 let wantsPlayback = false;
-// Bài kế tiếp được tải sẵn vào RAM (xem prefetchNextSong).
-let prefetchedSongId = null;
+// song_id của các blob TẠM đang giữ trong RAM (xem prefetchNextSong).
+// Bất biến: nhiều nhất 2 phần tử — bài đang phát và bài tải sẵn kế tiếp.
+let prefetchedIds = [];
 let prefetchInFlight = false;
 const MAX_RESUME_ATTEMPTS = 10;
 
@@ -41,20 +42,35 @@ const MAX_RESUME_ATTEMPTS = 10;
 // vào RAM từ lúc bài hiện tại còn đang phát, khi trang còn sống và mạng còn
 // thông. Blob nằm ở song.songData nên appendSong dùng lại đúng nhánh offline
 // sẵn có, không cần nhánh riêng.
-function releasePrefetched() {
-    if (prefetchedSongId === null) return;
+// Thả mọi blob tạm trừ những id được giữ lại. Giữ bài đang phát (cơ chế tự
+// phục hồi cần nạp lại được nguồn) và bài vừa tải sẵn -> trần RAM là 2 bài.
+//
+// Bản trước dùng một biến prefetchedSongId đơn lẻ và bỏ qua bài đang phát. Vì
+// hàm này chỉ được gọi đúng lúc bài tải sẵn vừa TRỞ THÀNH bài đang phát, điều
+// kiện bỏ qua luôn đúng nên không blob nào được thả, mà biến thì bị gán null —
+// mất luôn tay cầm cuối cùng. Kết quả: rò rỉ một blob cho mỗi bài đã phát.
+function releasePrefetchedExcept(keepIds) {
+    const keep = new Set(keepIds.filter(id => id !== null && id !== undefined));
+    const remaining = [];
 
-    [songs, currentAlbumPlaylist].forEach(list => {
-        if (!Array.isArray(list)) return;
-        list.forEach(s => {
-            // Chỉ thả bản tạm. Bài người dùng đã tải hẳn về máy có localPath,
-            // và bài đang phát thì giữ lại để cơ chế tự phục hồi còn nạp lại được.
-            if (s && s.song_id === prefetchedSongId && s.song_id !== playingSongId && !s.localPath) {
-                delete s.songData;
-            }
+    prefetchedIds.forEach(id => {
+        if (keep.has(id)) {
+            remaining.push(id);
+            return;
+        }
+
+        [songs, currentAlbumPlaylist].forEach(list => {
+            if (!Array.isArray(list)) return;
+            list.forEach(item => {
+                // Chỉ thả bản tạm. Bài người dùng đã tải hẳn về máy có localPath.
+                if (item && item.song_id === id && !item.localPath) {
+                    delete item.songData;
+                }
+            });
         });
     });
-    prefetchedSongId = null;
+
+    prefetchedIds = remaining;
 }
 
 async function prefetchNextSong() {
@@ -92,9 +108,10 @@ async function prefetchNextSong() {
         const blob = await response.blob();
         if (!blob.size || !blob.type.startsWith('audio/')) return;
 
-        releasePrefetched();
         next.songData = blob;
-        prefetchedSongId = next.song_id;
+        if (!prefetchedIds.includes(next.song_id)) prefetchedIds.push(next.song_id);
+        // Sau lượt này chỉ còn cần bài đang phát và bài vừa tải sẵn.
+        releasePrefetchedExcept([playingSongId, next.song_id]);
     } catch (error) {
         // Mạng chập chờn: bỏ qua. Lúc chuyển bài sẽ quay về đường stream như cũ.
     } finally {
@@ -477,6 +494,8 @@ async function appendSong(index, autoPlay = false, retryCount = 0) {
 
 function resetAudioState() {
     wantsPlayback = false;
+    // Dừng hẳn thì không giữ blob tạm nào nữa.
+    releasePrefetchedExcept([]);
     audioLoadToken++;
     clearResumeTimer();
     resumeAttempts = 0;
