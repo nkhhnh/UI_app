@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Key In Cloud Music</title>
+
+    <!--
+      Trang chủ thật nằm ở /html/index.html — toàn bộ HTML của app đều trong
+      thư mục html/, gốc repo không có trang nào. Nên vào thẳng tên miền trần
+      sẽ ra 404.
+
+      File này chỉ làm một việc: đẩy sang trang chủ thật.
+
+      Vì sao xử lý ở đây thay vì bằng quy tắc Redirect trên Render:
+      quy tắc đó nằm trong cấu hình dashboard, không nằm trong git — tạo lại
+      service, đổi hosting hay khôi phục từ repo là mất. File này đi theo mã
+      nguồn nên chỗ nào cũng chạy.
+
+      location.replace() chứ không phải location.href: nó THAY THẾ mục hiện tại
+      trong lịch sử duyệt web thay vì thêm mới, nên bấm Back từ trang chủ không
+      bị quăng ngược lại đây rồi đẩy tới lần nữa — tức không kẹt vòng lặp.
+    -->
+    <meta http-equiv="refresh" content="0; url=/html/index.html">
+    <link rel="canonical" href="/html/index.html">
+    <link rel="icon" href="/image/logo.webp" type="image/webp">
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e5d1ad;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            color: #0e2431;
+        }
+
+        a {
+            color: #e30d23;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Chỉ hiện nếu cả JS lẫn meta refresh đều không chạy được. -->
+    <p>Đang chuyển tới <a href="/html/index.html">trang chủ</a>…</p>
+
+    <script>
+        location.replace('/html/index.html');
+    </script>
+</body>
+
+</html>
