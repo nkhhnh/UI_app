@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function checkNetworkStatus() {
         if (!navigator.onLine) {
-            window.location.href = 'index.html';
+            window.location.href = '/';
             return;
         }
     }

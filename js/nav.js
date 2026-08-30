@@ -106,7 +106,7 @@ function renderSidebar() {
     }
 
     const token = localStorage.getItem('auth_token');
-    const currentPage = (window.location.pathname.split('/').pop() || 'index.html').replace('.html', '');
+    const currentPage = (window.location.pathname.split('/').pop() || '/').replace('.html', '');
     const isOffline = !navigator.onLine;
 
     const pageTitles = {
@@ -125,11 +125,11 @@ function renderSidebar() {
                 <i class="bx bx-menu-alt-right btn-menu"></i>
             </div>
             <ul class="nav-links">
-                <li><a href="index.html" data-page="index"><i class="bx bx-home-alt-2"></i> <span class="title">Home</span></a></li>
-                <li><a href="${!token || isOffline ? '#' : 'user.html'}" data-page="user" class="${!token || isOffline ? 'disabled' : ''}"><i class='bx bx-user'></i> <span class="title">User</span></a></li>
-                <li><a href="${isOffline ? '#' : 'weather.html'}" data-page="weather" class="${isOffline ? 'disabled' : ''}"><i class='bx bx-cloud'></i> <span class="title">Weather</span></a></li>
-                <li><a href="musicplayer.html" data-page="musicplayer"><i class='bx bxs-music'></i> <span class="title">Music</span></a></li>
-                <li><a href="contact.html" data-page="contact"><i class="fa-solid fa-id-badge"></i> <span class="title">Contact</span></a></li>
+                <li><a href="/" data-page="index"><i class="bx bx-home-alt-2"></i> <span class="title">Home</span></a></li>
+                <li><a href="${!token || isOffline ? '#' : '/user'}" data-page="user" class="${!token || isOffline ? 'disabled' : ''}"><i class='bx bx-user'></i> <span class="title">User</span></a></li>
+                <li><a href="${isOffline ? '#' : '/weather'}" data-page="weather" class="${isOffline ? 'disabled' : ''}"><i class='bx bx-cloud'></i> <span class="title">Weather</span></a></li>
+                <li><a href="/music" data-page="musicplayer"><i class='bx bxs-music'></i> <span class="title">Music</span></a></li>
+                <li><a href="/contact" data-page="contact"><i class="fa-solid fa-id-badge"></i> <span class="title">Contact</span></a></li>
                 <li>
                     <a href="#" id="${token ? 'logout-link' : 'auth-link'}" data-page="${token ? 'logout' : 'login'}" class="${isOffline ? 'disabled' : ''}">
                         <i class='bx bx-log-${token ? 'out' : 'in'}'></i> <span class="title">${token ? 'Logout' : 'Login'}</span>
@@ -209,14 +209,14 @@ function setupLinkEvents() {
 
             if (link.id === 'auth-link') {
                 e.preventDefault();
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             } else if (link.id === 'logout-link') {
                 e.preventDefault();
                 localStorage.removeItem('auth_token');
                 renderSidebar();
                 setupLinkEvents();
                 showNotification('Đã đăng xuất', 'success');
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             }
         });
     });

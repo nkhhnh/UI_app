@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 registerForm.reset();
                 if (window.showNotification) showNotification('Đăng ký thành công!', 'success');
-                setTimeout(() => window.location.href = 'login.html', 1500);
+                setTimeout(() => window.location.href = '/login', 1500);
             } else {
                 if (window.showNotification) showNotification(data.message || 'Đăng ký thất bại!', 'error');
             }

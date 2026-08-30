@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     links.forEach(({ container, href }) => {
         const link = container.querySelector('a');
-        if (link && isOffline && (href === 'weather.html' || href === 'user.html')) {
+        if (link && isOffline && (href === '/weather' || href === '/user')) {
             link.classList.add('disabled');
         }
     });
@@ -26,12 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
 
-                if (isOffline && (href === 'weather.html' || href === 'user.html')) {
+                if (isOffline && (href === '/weather' || href === '/user')) {
                     if (window.showNotification) showNotification('Không hoạt động trong khi Offline', 'error');
                     return;
                 }
 
-                if (href === 'user.html') {
+                if (href === '/user') {
                     if (typeof checkAuth === 'function' && !checkAuth()) {
                         return;
                     }
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('online', () => {
         links.forEach(({ container, href }) => {
             const link = container.querySelector('a');
-            if (link && (href === 'weather.html' || href === 'user.html')) {
+            if (link && (href === '/weather' || href === '/user')) {
                 link.classList.remove('disabled');
             }
         });
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('offline', () => {
         links.forEach(({ container, href }) => {
             const link = container.querySelector('a');
-            if (link && (href === 'weather.html' || href === 'user.html')) {
+            if (link && (href === '/weather' || href === '/user')) {
                 link.classList.add('disabled');
                 if (window.showNotification) ;
             }

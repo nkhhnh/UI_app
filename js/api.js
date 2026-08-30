@@ -26,7 +26,7 @@ async function fetchAPI(endpoint, method = 'GET', body = null) {
             if (response.status === 401) {
                 localStorage.removeItem('auth_token');
                 showNotification('Phiên hết hạn. Vui lòng đăng nhập lại.', 'error');
-                setTimeout(() => window.location.href = 'login.html', 1500);
+                setTimeout(() => window.location.href = '/login', 1500);
                 throw new Error('Đang chuyển hướng đến trang đăng nhập...');
             }
             throw new Error(errorData.message || `Lỗi máy chủ: ${response.status}`);

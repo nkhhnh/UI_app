@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 localStorage.setItem('auth_token', data.token);
                 showNotification('Đăng nhập thành công!', 'success');
-                window.location.href = 'index.html';
+                window.location.href = '/';
             } else {
                  showNotification('Sai tài khoản hoặc mật khẩu!', 'error');
             }

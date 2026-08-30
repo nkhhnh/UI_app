@@ -1,12 +1,12 @@
-const CACHE_NAME = 'music-app-cache-v33';
+const CACHE_NAME = 'music-app-cache-v35';
 const STATIC_ASSETS = [
   '/index.html',
-  '/html/index.html',
-  '/html/contact.html',
-  '/html/login.html',
-  '/html/musicplayer.html',
-  '/html/user.html',
-  '/html/weather.html',
+  '/',
+  '/contact/',
+  '/login/',
+  '/music/',
+  '/user/',
+  '/weather/',
   '/asset/uicons-solid-straight.css',
   '/asset/uicons-regular-rounded.css',
   '/asset/fontawesome/css/all.min.css',
@@ -89,6 +89,23 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+// Duong dan sach kieu /music thuc chat duoc phuc vu tu music/index.html.
+// Trong STATIC_ASSETS no phai ghi la '/music/' (co dau gach cuoi) vi day la
+// dang server tra ve NGAY, khong qua mot lan chuyen huong 301 — ma cache.put()
+// nem TypeError voi response da bi chuyen huong, du lam hong ca lan install.
+//
+// Nhung nguoi dung lai bam vao link '/music' (khong gach cuoi). Nen khi tra
+// cache phai thu them dang co gach, neu khong offline se truot het cac trang.
+function matchCached(req, url) {
+  return caches.match(req).then(hit => {
+    if (hit) return hit;
+    if (req.mode === 'navigate' && !url.pathname.endsWith('/')) {
+      return caches.match(url.pathname + '/');
+    }
+    return undefined;
+  });
+}
+
 self.addEventListener('fetch', event => {
   const req = event.request;
 
@@ -110,7 +127,7 @@ self.addEventListener('fetch', event => {
   if (url.pathname.startsWith('/api')) return;                   // phòng khi deploy chung origin
 
   event.respondWith(
-    caches.match(req).then(response => {
+    matchCached(req, url).then(response => {
       return response || fetch(req).then(fetchResponse => {
         if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
           return fetchResponse;
@@ -122,7 +139,7 @@ self.addEventListener('fetch', event => {
         return fetchResponse;
       }).catch(() => {
         if (req.mode === 'navigate') {
-          return caches.match('/html/index.html');
+          return caches.match('/');
         }
         return new Response('Offline: Network error', { status: 404 });
       });
@@ -183,7 +200,7 @@ self.addEventListener('push', event => {
     body: data.body || 'Thông báo mới từ Music App',
     icon: '/image/192x192.png',
     badge: '/image/192x192.png',
-    data: { url: data.url || '/html/musicplayer.html' }
+    data: { url: data.url || '/music' }
   };
 
   event.waitUntil(

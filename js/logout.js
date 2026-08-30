@@ -4,7 +4,7 @@ function checkAuth() {
         if (window.showNotification) {
             window.showNotification('Vui lòng đăng nhập để tiếp tục!', 'error');
         }
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return false;
     }
     return true;
@@ -12,14 +12,14 @@ function checkAuth() {
 
 function protectPage() {
     const isOffline = !navigator.onLine;
-    const currentPage = (window.location.pathname.split('/').pop() || 'index.html').replace('.html', '');
+    const currentPage = (window.location.pathname.split('/').pop() || '/').replace('.html', '');
 
     if (isOffline) {
         if (currentPage === 'user' || currentPage === 'weather') {
             if (window.showNotification) {
                 window.showNotification('Kết nối internet để tiếp tục', 'error');
             }
-            window.location.href = 'index.html';
+            window.location.href = '/';
             return false;
         }
     }
@@ -36,7 +36,7 @@ function protectPage() {
                 if (window.showNotification) {
                     window.showNotification('Kết nối internet để tiếp tục', 'error');
                 }
-                window.location.href = 'index.html';
+                window.location.href = '/';
                 return false;
             }
             if (currentPage === 'user' && !checkAuth()) {
@@ -46,12 +46,12 @@ function protectPage() {
     };
 
     window.addEventListener('offline', () => {
-        const updatedPage = (window.location.pathname.split('/').pop() || 'index.html').replace('.html', '');
+        const updatedPage = (window.location.pathname.split('/').pop() || '/').replace('.html', '');
         if (updatedPage === 'user' || updatedPage === 'weather') {
             if (window.showNotification) {
                 window.showNotification('Kết nối internet để tiếp tục', 'error');
             }
-            window.location.href = 'index.html';
+            window.location.href = '/';
         }
     });
 
@@ -83,12 +83,12 @@ function setupLogout() {
         }
 
         if (!token) {
-            window.location.replace('login.html');
+            window.location.replace('/login');
             return;
         }
 
         localStorage.removeItem('auth_token');
-        window.location.replace('login.html');
+        window.location.replace('/login');
     });
 }
 

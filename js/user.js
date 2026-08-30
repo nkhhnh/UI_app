@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('auth_token');
     if (!token) {
         if (window.showNotification) showNotification('Vui lòng đăng nhập để tiếp tục!', 'error');
-        setTimeout(() => window.location.href = 'login.html', 1500);
+        setTimeout(() => window.location.href = '/login', 1500);
         return;
     }
     const tabButtons = document.querySelectorAll('.tab-button');
