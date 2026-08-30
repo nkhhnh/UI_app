@@ -22,6 +22,10 @@ let watchdogTimer = null;
 let watchdogLastTime = -1;
 let watchdogStuckSince = 0;
 let isResuming = false;
+// Ý ĐỊNH của người dùng, tách khỏi isPlaying. isPlaying là trạng thái tức thời
+// của thẻ <audio> và bị hạ xuống false mỗi lần chuyển bài; lớp tự phục hồi mà
+// bám vào nó thì đúng lúc chuyển bài (khoảnh khắc mong manh nhất) lại tê liệt.
+let wantsPlayback = false;
 const MAX_RESUME_ATTEMPTS = 10;
 
 function debounce(func, wait) {
@@ -149,6 +153,7 @@ function togglePlayPause(shouldPlay) {
             }
             audio.play().then(() => {
                 localStorage.setItem('autoPlayEnabled', 'true');
+                wantsPlayback = true;
                 record.classList.add('on');
                 toneArm.classList.add('play');
                 playIcon.style.display = 'none';
@@ -167,6 +172,8 @@ function togglePlayPause(shouldPlay) {
                 reject(err);
             });
         } else {
+            // Chỉ nhánh này mới là "người dùng chủ động dừng".
+            wantsPlayback = false;
             audio.pause();
             record.classList.remove('on');
             toneArm.classList.remove('play');
@@ -206,6 +213,7 @@ async function appendSong(index, autoPlay = false, retryCount = 0) {
     const token = localStorage.getItem('auth_token');
     const isLoggedIn = !!token;
     const isOnline = navigator.onLine;
+    let autoplayBlocked = false;
     try {
         if (activeBlobUrl) {
             URL.revokeObjectURL(activeBlobUrl);
@@ -223,11 +231,21 @@ async function appendSong(index, autoPlay = false, retryCount = 0) {
         // lặng dài khiến trình duyệt đóng media session khi màn hình đang tắt.
         audio.pause();
         isPlaying = false;
-        if (playIcon) playIcon.style.display = 'block';
-        if (pauseIcon) pauseIcon.style.display = 'none';
-        record.classList.remove('on');
-        toneArm.classList.remove('play');
-        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        if (autoPlay) {
+            // Tự chuyển bài (nhất là khi màn hình đang tắt): TUYỆT ĐỐI không hạ
+            // playbackState xuống 'paused'. Android thấy media session của một
+            // tab nền chuyển sang paused là thu hồi quyền phát nền, đóng thông
+            // báo và đóng băng trang -> hai lệnh await bên dưới không bao giờ
+            // hoàn tất, bài mới không bao giờ được phát. Đó chính là lý do nhạc
+            // dừng hẳn ở cuối bài hiện tại.
+            wantsPlayback = true;
+        } else {
+            if (playIcon) playIcon.style.display = 'block';
+            if (pauseIcon) pauseIcon.style.display = 'none';
+            record.classList.remove('on');
+            toneArm.classList.remove('play');
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        }
 
         if (progress) {
             progress.value = 0;
@@ -277,7 +295,7 @@ async function appendSong(index, autoPlay = false, retryCount = 0) {
                     { src: '/image/512x512.png', sizes: '512x512', type: 'image/png' }
                 ]
             });
-            navigator.mediaSession.playbackState = 'paused';
+            navigator.mediaSession.playbackState = autoPlay ? 'playing' : 'paused';
         }
 
         // Chờ có timeout: server Render có thể "ngủ" và mất hàng chục giây để
@@ -320,10 +338,19 @@ async function appendSong(index, autoPlay = false, retryCount = 0) {
                 await togglePlayPause(true);
                 localStorage.setItem('autoPlayEnabled', 'true');
             } catch (err) {
-                if (err.name === 'NotAllowedError' && localStorage.getItem('autoPlayEnabled') !== 'true' && autoplayConsent) {
+                if (err.name !== 'NotAllowedError') throw err;
+
+                if (localStorage.getItem('autoPlayEnabled') !== 'true' && autoplayConsent) {
+                    // Chưa từng phát lần nào -> thật sự cần một cú chạm.
                     autoplayConsent.style.display = 'block';
-                } else if (err.name !== 'NotAllowedError') {
-                    throw err;
+                } else {
+                    // Đã từng phát rồi mà vẫn bị chặn thì gần như luôn là do
+                    // trang đang chạy nền lúc màn hình tắt. Trước đây lỗi này bị
+                    // nuốt im lặng: isPlaying nằm nguyên ở false nên toàn bộ lớp
+                    // tự phục hồi (đều kiểm tra isPlaying) không chạy, nhạc dừng
+                    // hẳn. Giữ ý định phát và thử lại sau khi thoát khối này.
+                    wantsPlayback = true;
+                    autoplayBlocked = true;
                 }
             }
         }
@@ -368,10 +395,14 @@ async function appendSong(index, autoPlay = false, retryCount = 0) {
     } finally {
         preparingNotification.remove();
         isLoadingSong = false;
+        // Phải hẹn ở đây: scheduleResume kiểm tra isLoadingSong nên gọi trong
+        // khối try ở trên sẽ bị bỏ qua.
+        if (autoplayBlocked) scheduleResume(false);
     }
 }
 
 function resetAudioState() {
+    wantsPlayback = false;
     audioLoadToken++;
     clearResumeTimer();
     resumeAttempts = 0;
@@ -490,7 +521,7 @@ function updatePositionState() {
 // thật (audio.error, kẹt kéo dài, vừa có mạng lại). Mặc định là "mềm": chỉ gọi
 // play() nếu trình duyệt đã tự dừng, còn đang buffer thì để nó tự hồi phục.
 function scheduleResume(hard = false) {
-    if (!isPlaying || isLoadingSong || !currentSourceUrl) return;
+    if (!wantsPlayback || isLoadingSong || !currentSourceUrl) return;
     if (resumeTimer || isResuming) return;
     if (resumeAttempts >= MAX_RESUME_ATTEMPTS) return;
 
@@ -503,7 +534,7 @@ function scheduleResume(hard = false) {
 }
 
 async function tryResumePlayback(hard = false) {
-    if (!audio || !isPlaying || isLoadingSong || !currentSourceUrl || isResuming) return;
+    if (!audio || !wantsPlayback || isLoadingSong || !currentSourceUrl || isResuming) return;
 
     // Mất mạng mà nguồn là stream thì chờ, sự kiện 'online' sẽ gọi lại ngay.
     if (currentSourceIsStream && !navigator.onLine) {
@@ -598,7 +629,7 @@ async function tryResumePlayback(hard = false) {
 function startPlaybackWatchdog() {
     if (watchdogTimer) return;
     watchdogTimer = setInterval(() => {
-        if (!audio || !isPlaying || isLoadingSong || !currentSourceUrl || isResuming) {
+        if (!audio || !wantsPlayback || isLoadingSong || !currentSourceUrl || isResuming) {
             watchdogLastTime = -1;
             watchdogStuckSince = 0;
             return;
@@ -645,6 +676,18 @@ function initPlaybackResilience() {
         resumeAttempts = 0;
         watchdogStuckSince = 0;
         clearResumeTimer();
+        // Nhạc có thể được cho chạy lại bởi watchdog hoặc bởi lượt tự chuyển
+        // bài — cả hai đều không đi qua togglePlayPause, nên isPlaying và icon
+        // sẽ lệch với thực tế nếu không đồng bộ ở đây.
+        if (!isPlaying) {
+            isPlaying = true;
+            wantsPlayback = true;
+            if (playIcon) playIcon.style.display = 'none';
+            if (pauseIcon) pauseIcon.style.display = 'block';
+            if (record) record.classList.add('on');
+            if (toneArm) toneArm.classList.add('play');
+            updateSongList();
+        }
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
         updatePositionState();
     });
@@ -655,7 +698,7 @@ function initPlaybackResilience() {
 
     // Trình duyệt tự pause dù người dùng không bấm -> gọi play() lại (mức mềm).
     audio.addEventListener('pause', () => {
-        if (isPlaying && !audio.ended && !isLoadingSong && !isResuming) scheduleResume(false);
+        if (wantsPlayback && !audio.ended && !isLoadingSong && !isResuming) scheduleResume(false);
     });
 
     // 'suspend' và 'waiting' là sự kiện BÌNH THƯỜNG của quá trình buffer:
@@ -666,12 +709,12 @@ function initPlaybackResilience() {
     // thật sự không nhả dữ liệu) và cũng chỉ thử ở mức mềm; trường hợp kẹt thật
     // đã có watchdog lo.
     audio.addEventListener('stalled', () => {
-        if (isPlaying && !isLoadingSong && !isResuming) scheduleResume(false);
+        if (wantsPlayback && !isLoadingSong && !isResuming) scheduleResume(false);
     });
 
     // Có mạng trở lại thì thử ngay, không chờ hết backoff.
     window.addEventListener('online', () => {
-        if (isPlaying && currentSourceIsStream) {
+        if (wantsPlayback && currentSourceIsStream) {
             resumeAttempts = 0;
             clearResumeTimer();
             tryResumePlayback(true);

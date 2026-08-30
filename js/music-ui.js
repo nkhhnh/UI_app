@@ -769,8 +769,11 @@ function setupEvents() {
     audio.addEventListener('error', () => {
         // Lỗi phát nhạc thường chỉ là đứt kết nối tạm thời khi tắt màn hình.
         // Nếu người dùng vẫn đang muốn nghe thì thử nối lại thay vì reset hẳn.
-        if (isPlaying && !isLoadingSong && currentSourceUrl) {
+        if (wantsPlayback && !isLoadingSong && currentSourceUrl) {
             // audio.error da duoc set -> day la loi that, cho phep nap lai nguon.
+            // Bam vao wantsPlayback chu khong phai isPlaying: trong lúc chuyển
+            // bài isPlaying luôn là false, nếu xét nó thì một lỗi tạm thời sẽ
+            // rơi thẳng xuống resetAudioState và xoá luôn ý định phát.
             scheduleResume(true);
             return;
         }
@@ -1221,9 +1224,9 @@ document.addEventListener('visibilitychange', () => {
     // quay lại app; còn nhánh hidden gọi play() thừa và bắn thông báo lỗi.
     if (!audio) return;
 
-    if (isPlaying && audio.paused && currentSourceUrl && !isLoadingSong) {
+    if (wantsPlayback && audio.paused && currentSourceUrl && !isLoadingSong) {
         // Chỉ can thiệp khi trình duyệt đã tự dừng dù ta vẫn muốn nghe.
-        audio.play().catch(() => scheduleResume());
+        audio.play().catch(() => scheduleResume(false));
     }
 
     if (!document.hidden) {
