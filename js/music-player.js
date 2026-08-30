@@ -32,8 +32,11 @@ let audioB = null;
 let targetVolume = 1;
 let handoffIndex = -1;       // chỉ số bài đã nạp sẵn vào thẻ chờ
 let handoffPlaying = false;  // thẻ chờ đã được cho chạy (im tiếng) chưa
+let handoffFetching = false; // đang tải bài kế tiếp về máy
+let ownedUrlActive = null;   // object URL đang cấp cho thẻ phát
+let ownedUrlStandby = null;  // object URL đang cấp cho thẻ chờ
 
-const HANDOFF_PRELOAD_AT = 40;  // giây còn lại: bắt đầu nạp thẻ chờ
+const HANDOFF_PRELOAD_AT = 75;  // giây còn lại: bắt đầu tải bài kế tiếp
 const HANDOFF_ARM_AT = 3;       // giây còn lại: cho thẻ chờ chạy im tiếng
 const MAX_RESUME_ATTEMPTS = 10;
 
@@ -85,10 +88,42 @@ function bindToBoth(type, handler, options) {
     });
 }
 
-function streamUrlFor(songId) {
+// Tải trọn bài về máy. Thẻ chờ PHẢI được cấp nguồn cục bộ chứ không phải URL
+// stream: khi màn hình tắt, trình duyệt hạ mức ưu tiên việc nạp thêm dữ liệu
+// media của trang nền, nên thẻ chỉ phát hết đúng phần đã buffer sẵn (khoảng
+// 20-30 giây) rồi đứng im chờ dữ liệu không bao giờ tới. Nguồn là Blob thì
+// không có request nào trong lúc phát, không có gì để mà bị chặn.
+async function fetchSongBlob(songId) {
     const token = localStorage.getItem('auth_token');
     if (!token || !navigator.onLine) return null;
-    return `${API_BASE_URL}/songs/${songId}/stream?token=${token}`;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/songs/${songId}/download`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/octet-stream'
+            }
+        });
+        if (!response.ok) return null;
+
+        const blob = await response.blob();
+        if (!blob.size || !blob.type.startsWith('audio/')) return null;
+        return blob;
+    } catch (error) {
+        return null;
+    }
+}
+
+function armStandbyWith(url) {
+    const standby = standbyAudio();
+    if (ownedUrlStandby) URL.revokeObjectURL(ownedUrlStandby);
+    ownedUrlStandby = url;
+
+    standby.volume = 0;
+    standby.preload = 'auto';
+    standby.src = url;
+    standby.load();
+    handoffPlaying = false;
 }
 
 // Gọi liên tục từ 'timeupdate'. Tự thoát sớm nếu chưa tới lúc.
@@ -108,7 +143,7 @@ function prepareHandoff() {
     // handoffIndex < 0 nghĩa là chưa chốt. Với chế độ ngẫu nhiên, chốt một lần
     // là bắt buộc: getNextSongIndex() có tác dụng phụ (đẩy chỉ số vào
     // playedIndices), gọi lại mỗi nhịp timeupdate sẽ băm nát thứ tự phát.
-    if (handoffIndex < 0) {
+    if (handoffIndex < 0 && !handoffFetching) {
         let nextIndex;
         if (isLoopSingle) {
             nextIndex = currentSongIndex;
@@ -122,17 +157,30 @@ function prepareHandoff() {
         const next = songListSource[nextIndex];
         if (!next || !next.song_id) return;
 
-        const url = next.songData instanceof Blob
-            ? URL.createObjectURL(next.songData)
-            : streamUrlFor(next.song_id);
-        if (!url) return;
-
-        standby.volume = 0;
-        standby.preload = 'auto';
-        standby.src = url;
-        standby.load();
+        // Chốt ngay để nhịp timeupdate sau không bốc lại (quan trọng với chế độ
+        // ngẫu nhiên) và để commitHandoff biết đang đợi bài nào.
         handoffIndex = nextIndex;
         handoffPlaying = false;
+
+        if (next.songData instanceof Blob) {
+            // Bài đã tải hẳn về máy, dùng luôn.
+            armStandbyWith(URL.createObjectURL(next.songData));
+        } else {
+            handoffFetching = true;
+            fetchSongBlob(next.song_id).then(blob => {
+                handoffFetching = false;
+
+                // Trong lúc tải, người dùng có thể đã đổi bài -> bỏ kết quả.
+                if (handoffIndex !== nextIndex) return;
+
+                if (!blob) {
+                    // Tải hỏng: nhả chốt để 'ended' quay về đường appendSong cũ.
+                    handoffIndex = -1;
+                    return;
+                }
+                armStandbyWith(URL.createObjectURL(blob));
+            });
+        }
     }
 
     // Bước 2 — mấu chốt của toàn bộ cơ chế: cho thẻ chờ chạy im tiếng NGAY LÚC
@@ -175,6 +223,13 @@ function commitHandoff() {
     audio.volume = targetVolume;
 
     previous.pause();
+
+    // Bài vừa phát xong không cần nữa -> thả bộ nhớ của nó. Thẻ chờ thành thẻ
+    // phát nên object URL của nó chuyển vai theo. Nhờ vậy nhiều nhất chỉ có 2
+    // bài nằm trong RAM: bài đang phát và bài đang tải sẵn.
+    if (ownedUrlActive) URL.revokeObjectURL(ownedUrlActive);
+    ownedUrlActive = ownedUrlStandby;
+    ownedUrlStandby = null;
 
     handoffIndex = -1;
     handoffPlaying = false;
@@ -233,6 +288,11 @@ function commitHandoff() {
 function disarmHandoff() {
     handoffIndex = -1;
     handoffPlaying = false;
+
+    if (ownedUrlStandby) {
+        URL.revokeObjectURL(ownedUrlStandby);
+        ownedUrlStandby = null;
+    }
     if (!audioB) return;
 
     const standby = standbyAudio();
@@ -623,8 +683,12 @@ async function appendSong(index, autoPlay = false, retryCount = 0) {
 
 function resetAudioState() {
     wantsPlayback = false;
-    // Dừng hẳn thì huỷ luôn phần chuẩn bị chuyển bài đang treo.
+    // Dừng hẳn thì huỷ phần chuẩn bị đang treo và thả hết bộ nhớ đang giữ.
     disarmHandoff();
+    if (ownedUrlActive) {
+        URL.revokeObjectURL(ownedUrlActive);
+        ownedUrlActive = null;
+    }
     audioLoadToken++;
     clearResumeTimer();
     resumeAttempts = 0;
