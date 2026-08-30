@@ -1,4 +1,4 @@
-const CACHE_NAME = 'music-app-cache-v26';
+const CACHE_NAME = 'music-app-cache-v27';
 const STATIC_ASSETS = [
   '/html/index.html',
   '/html/contact.html',
@@ -37,15 +37,15 @@ const STATIC_ASSETS = [
   '/js/music-data.js',
   '/js/music-player.js',
   '/js/music-ui.js',
-  '/image/192x192.png',
-  '/image/512x512.png',
-  '/image/contact.png',
-  '/image/contact2.png',
-  '/image/logo.png',
-  '/image/music.png',
-  '/image/music2.png',
-  '/image/weather.png',
-  '/image/weather2.png',
+  '/image/192x192.webp',
+  '/image/512x512.webp',
+  '/image/contact.webp',
+  '/image/contact2.webp',
+  '/image/logo.webp',
+  '/image/music.webp',
+  '/image/music2.webp',
+  '/image/weather.webp',
+  '/image/weather2.webp',
   '/js/service-worker-register.js',
   '/manifest.json',
 ];
@@ -147,7 +147,7 @@ self.addEventListener('message', event => {
         if (clients.length === 0) {
           return self.registration.showNotification('Music App', {
             body: 'Bài hát đã kết thúc. Mở ứng dụng để tiếp tục.',
-            icon: '/image/192x192.png'
+            icon: '/image/192x192.webp'
           });
         }
         clients.forEach(client => {
@@ -170,8 +170,8 @@ self.addEventListener('push', event => {
   const data = event.data ? event.data.json() : {};
   const options = {
     body: data.body || 'Thông báo mới từ Music App',
-    icon: '/image/192x192.png',
-    badge: '/image/192x192.png',
+    icon: '/image/192x192.webp',
+    badge: '/image/192x192.webp',
     data: { url: data.url || '/html/musicplayer.html' }
   };
 

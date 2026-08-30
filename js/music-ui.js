@@ -1118,8 +1118,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if ('mediaSession' in navigator) {
             navigator.mediaSession.playbackState = 'paused';
             const artwork = navigator.onLine ? [
-                { src: '/image/192x192.png', sizes: '192x192', type: 'image/png' },
-                { src: '/image/512x512.png', sizes: '512x512', type: 'image/png' }
+                { src: '/image/192x192.webp', sizes: '192x192', type: 'image/webp' },
+                { src: '/image/512x512.webp', sizes: '512x512', type: 'image/webp' }
             ] : [];
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: 'Không có bài hát đang phát',

@@ -93,15 +93,15 @@ a.disabled {
 }
 
 .object-contact {
-    background-image: url(/image/contact.png);
+    background-image: url(/image/contact.webp);
 }
 
 .img-weather .object {
-    background-image: url(/image/weather.png);
+    background-image: url(/image/weather.webp);
 }
 
 .img-music .object {
-    background-image: url(/image/music.png);
+    background-image: url(/image/music.webp);
 }
 
 .text {
@@ -215,13 +215,13 @@ a {
         filter: grayscale(0%);
     }
     .object-contact {
-        background-image: url(/image/contact2.png);
+        background-image: url(/image/contact2.webp);
     }
     .img-weather .object {
-        background-image: url(/image/weather2.png);
+        background-image: url(/image/weather2.webp);
     }
     .img-music .object {
-        background-image: url(/image/music2.png);
+        background-image: url(/image/music2.webp);
     }
     .text {
         font-size: clamp(0.625rem, 2vw, 0.875rem);
