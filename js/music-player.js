@@ -26,10 +26,10 @@ let isResuming = false;
 // của thẻ <audio> và bị hạ xuống false mỗi lần chuyển bài; lớp tự phục hồi mà
 // bám vào nó thì đúng lúc chuyển bài (khoảnh khắc mong manh nhất) lại tê liệt.
 let wantsPlayback = false;
-// song_id của các blob TẠM đang giữ trong RAM (xem prefetchNextSong).
-// Bất biến: nhiều nhất 2 phần tử — bài đang phát và bài tải sẵn kế tiếp.
-let prefetchedIds = [];
-let prefetchInFlight = false;
+// Bài kế tiếp được hâm sẵn vào HTTP cache của trình duyệt (xem prefetchNextSong).
+let warmedSongId = null;
+let warmInFlight = false;
+let warmAbort = null;
 const MAX_RESUME_ATTEMPTS = 10;
 
 // Lúc bài hiện tại kết thúc, thẻ <audio> im tiếng suốt khoảng thời gian nạp
@@ -38,43 +38,24 @@ const MAX_RESUME_ATTEMPTS = 10;
 // đóng băng ngay giữa chừng: nhạc dừng hẳn ở cuối bài, và chỉ chạy tiếp lúc bật
 // màn hình (trang được đánh thức, await dở dang mới hoàn tất).
 //
-// Cách chữa là để khoảng lặng đó không chạm vào mạng nữa: tải sẵn bài kế tiếp
-// vào RAM từ lúc bài hiện tại còn đang phát, khi trang còn sống và mạng còn
-// thông. Blob nằm ở song.songData nên appendSong dùng lại đúng nhánh offline
-// sẵn có, không cần nhánh riêng.
-// Thả mọi blob tạm trừ những id được giữ lại. Giữ bài đang phát (cơ chế tự
-// phục hồi cần nạp lại được nguồn) và bài vừa tải sẵn -> trần RAM là 2 bài.
+// Cách chữa là để khoảng lặng đó không phải chờ mạng. Nhưng KHÔNG giữ bài kế
+// tiếp trong RAM: ta chỉ đọc nó một lượt rồi vứt sạch dữ liệu đi. Trình duyệt
+// tự ghi vào HTTP cache của chính nó trong lúc ta đọc (response từ /stream có
+// sẵn Cache-Control: public, max-age=604800), nên tới lúc chuyển bài thì
+// audio.src trỏ đúng URL đó và được phục vụ thẳng từ cache trên đĩa.
 //
-// Bản trước dùng một biến prefetchedSongId đơn lẻ và bỏ qua bài đang phát. Vì
-// hàm này chỉ được gọi đúng lúc bài tải sẵn vừa TRỞ THÀNH bài đang phát, điều
-// kiện bỏ qua luôn đúng nên không blob nào được thả, mà biến thì bị gán null —
-// mất luôn tay cầm cuối cùng. Kết quả: rò rỉ một blob cho mỗi bài đã phát.
-function releasePrefetchedExcept(keepIds) {
-    const keep = new Set(keepIds.filter(id => id !== null && id !== undefined));
-    const remaining = [];
-
-    prefetchedIds.forEach(id => {
-        if (keep.has(id)) {
-            remaining.push(id);
-            return;
-        }
-
-        [songs, currentAlbumPlaylist].forEach(list => {
-            if (!Array.isArray(list)) return;
-            list.forEach(item => {
-                // Chỉ thả bản tạm. Bài người dùng đã tải hẳn về máy có localPath.
-                if (item && item.song_id === id && !item.localPath) {
-                    delete item.songData;
-                }
-            });
-        });
-    });
-
-    prefetchedIds = remaining;
+// JS không giữ lại gì: đỉnh bộ nhớ bằng một chunk chứ không phải cả bài hát.
+// Cache đầy thì trình duyệt tự dọn, và trượt cache cũng chỉ là quay về đường
+// stream bình thường chứ không hỏng gì.
+function cancelPrefetch() {
+    if (warmAbort) {
+        warmAbort.abort();
+        warmAbort = null;
+    }
 }
 
 async function prefetchNextSong() {
-    if (prefetchInFlight || !navigator.onLine) return;
+    if (warmInFlight || !navigator.onLine) return;
 
     const songListSource = currentAlbumId ? currentAlbumPlaylist : songs;
     if (!songListSource || songListSource.length === 0) return;
@@ -89,33 +70,37 @@ async function prefetchNextSong() {
 
     const next = songListSource[nextIndex];
     if (!next || !next.song_id) return;
-    if (next.songData instanceof Blob) return;
+    if (next.songData instanceof Blob) return;   // đã có bản tải hẳn về máy
+    if (warmedSongId === next.song_id) return;   // đã hâm rồi
 
     const token = localStorage.getItem('auth_token');
     if (!token) return;
 
-    prefetchInFlight = true;
+    warmInFlight = true;
+    warmAbort = new AbortController();
     try {
-        const response = await fetch(`${API_BASE_URL}/songs/${next.song_id}/download`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/octet-stream'
-            },
-            cache: 'no-store'
-        });
-        if (!response.ok) return;
+        // Phải đúng CHUỖI URL mà appendSong sẽ gán vào audio.src. Lệch một ký
+        // tự là khác cache key, cả lượt hâm này thành công cốc.
+        const url = `${API_BASE_URL}/songs/${next.song_id}/stream?token=${token}`;
 
-        const blob = await response.blob();
-        if (!blob.size || !blob.type.startsWith('audio/')) return;
+        const response = await fetch(url, { signal: warmAbort.signal });
+        if (!response.ok || !response.body) return;
 
-        next.songData = blob;
-        if (!prefetchedIds.includes(next.song_id)) prefetchedIds.push(next.song_id);
-        // Sau lượt này chỉ còn cần bài đang phát và bài vừa tải sẵn.
-        releasePrefetchedExcept([playingSongId, next.song_id]);
+        // Đọc cho hết rồi vứt. Mục đích duy nhất là để trình duyệt kịp ghi vào
+        // cache; không giữ lại chunk nào.
+        const reader = response.body.getReader();
+        while (true) {
+            const { done } = await reader.read();
+            if (done) break;
+        }
+
+        warmedSongId = next.song_id;
     } catch (error) {
-        // Mạng chập chờn: bỏ qua. Lúc chuyển bài sẽ quay về đường stream như cũ.
+        // Huỷ giữa chừng hoặc mạng lỗi: bỏ qua. Lúc chuyển bài quay về đường
+        // stream bình thường, đúng như hành vi trước khi có cơ chế này.
     } finally {
-        prefetchInFlight = false;
+        warmInFlight = false;
+        warmAbort = null;
     }
 }
 
@@ -494,8 +479,9 @@ async function appendSong(index, autoPlay = false, retryCount = 0) {
 
 function resetAudioState() {
     wantsPlayback = false;
-    // Dừng hẳn thì không giữ blob tạm nào nữa.
-    releasePrefetchedExcept([]);
+    // Dừng hẳn thì huỷ luôn lượt hâm cache đang chạy dở.
+    cancelPrefetch();
+    warmedSongId = null;
     audioLoadToken++;
     clearResumeTimer();
     resumeAttempts = 0;

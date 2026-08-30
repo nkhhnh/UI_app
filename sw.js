@@ -1,4 +1,4 @@
-const CACHE_NAME = 'music-app-cache-v20';
+const CACHE_NAME = 'music-app-cache-v21';
 const STATIC_ASSETS = [
   '/html/index.html',
   '/html/contact.html',
