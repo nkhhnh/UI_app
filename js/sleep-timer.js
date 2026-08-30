@@ -150,7 +150,14 @@
 
     function openMenu(open) {
         if (!menu) return;
+
+        // Đặt thẳng style.display chứ không chỉ dựa vào class .open: markup có
+        // sẵn style="display:none" nội tuyến để menu không bao giờ xổ ra giữa
+        // trang nếu file CSS chưa kịp nạp — mà inline style thì class không
+        // đè được.
         menu.classList.toggle('open', open);
+        menu.style.display = open ? 'block' : 'none';
+
         const cancelRow = menu.querySelector('.sleep-timer-cancel');
         if (cancelRow) cancelRow.style.display = isActive() ? 'block' : 'none';
     }

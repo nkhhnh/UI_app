@@ -1,4 +1,4 @@
-const CACHE_NAME = 'music-app-cache-v29';
+const CACHE_NAME = 'music-app-cache-v30';
 const STATIC_ASSETS = [
   '/html/index.html',
   '/html/contact.html',
@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
   '/css/index.css',
   '/css/login.css',
   '/css/music.css',
+  '/css/sleep-timer.css',
   '/css/nav.css',
   '/css/pagetrans.css',
   '/css/user.css',
@@ -38,8 +39,8 @@ const STATIC_ASSETS = [
   '/js/music-player.js',
   '/js/music-ui.js',
   '/js/sleep-timer.js',
-  '/image/192x192.webp',
-  '/image/512x512.webp',
+  '/image/192x192.png',
+  '/image/512x512.png',
   '/image/contact.webp',
   '/image/contact2.webp',
   '/image/logo.webp',
@@ -156,7 +157,7 @@ self.addEventListener('message', event => {
         if (clients.length === 0) {
           return self.registration.showNotification('Music App', {
             body: 'Bài hát đã kết thúc. Mở ứng dụng để tiếp tục.',
-            icon: '/image/192x192.webp'
+            icon: '/image/192x192.png'
           });
         }
         clients.forEach(client => {
@@ -179,8 +180,8 @@ self.addEventListener('push', event => {
   const data = event.data ? event.data.json() : {};
   const options = {
     body: data.body || 'Thông báo mới từ Music App',
-    icon: '/image/192x192.webp',
-    badge: '/image/192x192.webp',
+    icon: '/image/192x192.png',
+    badge: '/image/192x192.png',
     data: { url: data.url || '/html/musicplayer.html' }
   };
 
