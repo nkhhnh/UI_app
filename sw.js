@@ -1,4 +1,4 @@
-const CACHE_NAME = 'music-app-cache-v28';
+const CACHE_NAME = 'music-app-cache-v29';
 const STATIC_ASSETS = [
   '/html/index.html',
   '/html/contact.html',
@@ -60,8 +60,16 @@ self.addEventListener('install', event => {
   //
   // De loi noi len thi install that bai, SW moi khong activate, SW cu va cache
   // cua no o nguyen. Tha khong cap nhat con hon mat sach.
+  //
+  // cache: 'reload' la BAT BUOC. addAll() mac dinh goi fetch() o che do cache
+  // thong thuong, nghia la no duoc phep lay tu HTTP cache cua trinh duyet thay
+  // vi tu mang. Hau qua: sau khi deploy, SW moi cai, tao cache ten moi, roi
+  // nhet dung ban CU vao do. Ten cache doi ma noi dung khong doi -> bump version
+  // bao nhieu lan cung khong thay gi thay doi.
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then(cache =>
+      cache.addAll(STATIC_ASSETS.map(url => new Request(url, { cache: 'reload' })))
+    )
   );
   self.skipWaiting();
 });
