@@ -223,6 +223,12 @@ function commitHandoff() {
     audio.volume = targetVolume;
 
     previous.pause();
+    // Chỉ pause thì thẻ vẫn giữ nguyên dữ liệu media đã nạp, và revoke object
+    // URL KHÔNG thu hồi được phần đó — thẻ đã nạp xong thì nó giữ tham chiếu
+    // riêng, không phụ thuộc vào URL nữa. Phải gỡ hẳn src rồi load() để thẻ nhả
+    // bộ đệm ra, lúc đó revoke mới thật sự giải phóng được bài hát.
+    previous.removeAttribute('src');
+    previous.load();
 
     // Bài vừa phát xong không cần nữa -> thả bộ nhớ của nó. Thẻ chờ thành thẻ
     // phát nên object URL của nó chuyển vai theo. Nhờ vậy nhiều nhất chỉ có 2
