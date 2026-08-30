@@ -1,4 +1,4 @@
-const CACHE_NAME = 'music-app-cache-v27';
+const CACHE_NAME = 'music-app-cache-v28';
 const STATIC_ASSETS = [
   '/html/index.html',
   '/html/contact.html',
@@ -37,6 +37,7 @@ const STATIC_ASSETS = [
   '/js/music-data.js',
   '/js/music-player.js',
   '/js/music-ui.js',
+  '/js/sleep-timer.js',
   '/image/192x192.webp',
   '/image/512x512.webp',
   '/image/contact.webp',

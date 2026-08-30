@@ -187,6 +187,19 @@
                 </div>
                 <i class="fa-solid fa-forward music-control__icon"></i>
                 <i class="fas fa-redo music-control__icon"></i>
+                <div class="sleep-timer">
+                    <i class="fa-solid fa-moon music-control__icon sleep-timer-btn" title="Hẹn giờ tắt"></i>
+                    <span class="sleep-timer-badge"></span>
+                    <div class="sleep-timer-menu">
+                        <div class="sleep-timer-option" data-minutes="end">Hết bài này</div>
+                        <div class="sleep-timer-option" data-minutes="15">15 phút</div>
+                        <div class="sleep-timer-option" data-minutes="30">30 phút</div>
+                        <div class="sleep-timer-option" data-minutes="45">45 phút</div>
+                        <div class="sleep-timer-option" data-minutes="60">1 tiếng</div>
+                        <div class="sleep-timer-option" data-minutes="120">2 tiếng</div>
+                        <div class="sleep-timer-cancel">Huỷ hẹn giờ</div>
+                    </div>
+                </div>
             </div>
             <div class="music-control__progress">
                 <span class="music-control__progress-time-start">00:00</span>
@@ -227,6 +240,7 @@
         <script src="/js/music-data.js"></script>
         <script src="/js/music-player.js"></script>
         <script src="/js/music-ui.js"></script>
+        <script src="/js/sleep-timer.js"></script>
 
         <script src="/js/logout.js"></script>
         <script src="/js/pagetrans.js"></script>
