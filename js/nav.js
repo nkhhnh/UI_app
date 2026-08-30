@@ -106,14 +106,20 @@ function renderSidebar() {
     }
 
     const token = localStorage.getItem('auth_token');
-    const currentPage = (window.location.pathname.split('/').pop() || '/').replace('.html', '');
+    // URL sach: / , /music , /weather ... Bo dau / o cuoi roi lay doan cuoi;
+    // duong dan rong (trang chu) quy ve 'home'. Truoc day ham nay tach tu ten
+    // file .html nen sau khi doi sang URL sach thi tra ve '/' va 'music',
+    // khong khop voi data-page 'index' / 'musicplayer' — Home va Music vi the
+    // khong bao gio sang len trong menu.
+    const path = window.location.pathname.replace(/\/+$/, '');
+    const currentPage = path === '' ? 'home' : path.split('/').pop();
     const isOffline = !navigator.onLine;
 
     const pageTitles = {
-        'index': 'Home',
+        'home': 'Home',
         'user': 'Profile',
         'weather': 'Weather',
-        'musicplayer': 'Music',
+        'music': 'Music',
         'contact': 'Contact',
     };
     const displayTitle = pageTitles[currentPage] || 'MUSIC';
@@ -125,10 +131,10 @@ function renderSidebar() {
                 <i class="bx bx-menu-alt-right btn-menu"></i>
             </div>
             <ul class="nav-links">
-                <li><a href="/" data-page="index"><i class="bx bx-home-alt-2"></i> <span class="title">Home</span></a></li>
+                <li><a href="/" data-page="home"><i class="bx bx-home-alt-2"></i> <span class="title">Home</span></a></li>
                 <li><a href="${!token || isOffline ? '#' : '/user'}" data-page="user" class="${!token || isOffline ? 'disabled' : ''}"><i class='bx bx-user'></i> <span class="title">User</span></a></li>
                 <li><a href="${isOffline ? '#' : '/weather'}" data-page="weather" class="${isOffline ? 'disabled' : ''}"><i class='bx bx-cloud'></i> <span class="title">Weather</span></a></li>
-                <li><a href="/music" data-page="musicplayer"><i class='bx bxs-music'></i> <span class="title">Music</span></a></li>
+                <li><a href="/music" data-page="music"><i class='bx bxs-music'></i> <span class="title">Music</span></a></li>
                 <li><a href="/contact" data-page="contact"><i class="fa-solid fa-id-badge"></i> <span class="title">Contact</span></a></li>
                 <li>
                     <a href="#" id="${token ? 'logout-link' : 'auth-link'}" data-page="${token ? 'logout' : 'login'}" class="${isOffline ? 'disabled' : ''}">
