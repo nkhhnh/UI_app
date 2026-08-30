@@ -1,4 +1,4 @@
-const CACHE_NAME = 'music-app-cache-v25';
+const CACHE_NAME = 'music-app-cache-v26';
 const STATIC_ASSETS = [
   '/html/index.html',
   '/html/contact.html',
@@ -13,6 +13,7 @@ const STATIC_ASSETS = [
   '/asset/bootstrap.min.css',
   '/asset/fontawesome/webfonts/fa-solid-900.woff2',
   '/asset/fontawesome/webfonts/fa-regular-400.woff2',
+  '/asset/fontawesome/webfonts/fa-brands-400.woff2',
   '/asset/boxicons/fonts/boxicons.woff2',
   '/css/contact.css',
   '/css/index.css',
@@ -50,12 +51,16 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', event => {
+  // KHONG bat loi o day. cache.addAll() la toan-hoac-khong: chi can mot file
+  // tai hong la khong file nao duoc luu. Truoc day loi bi .catch nuot, nen
+  // install van coi nhu thanh cong -> SW moi activate -> xoa sach cache cu ->
+  // khong con cache nao ca. Che do offline chet am tham, online van chay binh
+  // thuong nen khong ai nhan ra.
+  //
+  // De loi noi len thi install that bai, SW moi khong activate, SW cu va cache
+  // cua no o nguyen. Tha khong cap nhat con hon mat sach.
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(STATIC_ASSETS);
-    }).catch(err => {
-      console.error('Service Worker cache.addAll failed:', err);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
